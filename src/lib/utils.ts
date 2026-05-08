@@ -7,6 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function getDifficultyTier(difficulty: number): DifficultyTier {
+  if (difficulty <= 0) return "beginner";
   if (difficulty <= 4) return "beginner";
   if (difficulty <= 8) return "easy";
   if (difficulty <= 12) return "medium";
@@ -16,6 +17,7 @@ export function getDifficultyTier(difficulty: number): DifficultyTier {
 }
 
 export function getDifficultyColor(difficulty: number): string {
+  if (difficulty <= 0) return "#555577";   // unrated / unknown
   if (difficulty <= 4) return "#44dd88";
   if (difficulty <= 8) return "#88ddff";
   if (difficulty <= 12) return "#ffdd00";
@@ -25,6 +27,7 @@ export function getDifficultyColor(difficulty: number): string {
 }
 
 export function getDifficultyLabel(difficulty: number): string {
+  if (difficulty <= 0) return "Unrated";
   if (difficulty <= 4) return "Beginner";
   if (difficulty <= 8) return "Easy";
   if (difficulty <= 12) return "Medium";

@@ -23,7 +23,7 @@ export default function MapsPage() {
   const [more,    setMore]    = useState(false);
 
   const [q,       setQ]       = useState("");
-  const [diffMin, setDiffMin] = useState(1);
+  const [diffMin, setDiffMin] = useState(0);
   const [diffMax, setDiffMax] = useState(21);
   const [tags,    setTags]    = useState<string[]>([]);
   const [sort,    setSort]    = useState("popular");
@@ -36,7 +36,7 @@ export default function MapsPage() {
     try {
       const p = new URLSearchParams({ sort, page: String(pg), limit: String(LIMIT) });
       if (q.trim())     p.set("search", q.trim());
-      if (diffMin > 1)  p.set("diffMin", String(diffMin));
+      if (diffMin > 0)  p.set("diffMin", String(diffMin));
       if (diffMax < 21) p.set("diffMax", String(diffMax));
       tags.forEach(t => p.append("tags", t));
 
@@ -55,8 +55,8 @@ export default function MapsPage() {
   }, [fetchMaps, q]);
 
   const toggle  = (t: string) => setTags(p => p.includes(t) ? p.filter(x => x !== t) : [...p, t]);
-  const reset   = () => { setDiffMin(1); setDiffMax(21); setTags([]); };
-  const dirty   = diffMin > 1 || diffMax < 21 || tags.length > 0;
+  const reset   = () => { setDiffMin(0); setDiffMax(21); setTags([]); };
+  const dirty   = diffMin > 0 || diffMax < 21 || tags.length > 0;
   const hasMore = maps.length < total;
 
   return (

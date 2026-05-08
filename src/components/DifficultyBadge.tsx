@@ -15,7 +15,7 @@ export function DifficultyBadge({ difficulty, size = "md", showLabel = false }: 
       className={`inline-flex items-center gap-1 rounded font-bold tabular-nums ${pad}`}
       style={{ color, borderColor: `${color}44`, backgroundColor: `${color}18`, border: `1px solid ${color}44` }}
     >
-      {difficulty % 1 === 0 ? difficulty : difficulty.toFixed(1)}
+      {difficulty <= 0 ? "?" : difficulty % 1 === 0 ? difficulty : difficulty.toFixed(1)}
     </span>
   );
 }

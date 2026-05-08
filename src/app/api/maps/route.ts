@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const search  = searchParams.get("search") ?? "";
-  const diffMin = Number(searchParams.get("diffMin") ?? 1);
+  const diffMin = Number(searchParams.get("diffMin") ?? 0);
   const diffMax = Number(searchParams.get("diffMax") ?? 99);
   const tags    = searchParams.getAll("tags");
   const sort    = searchParams.get("sort") ?? "popular";
