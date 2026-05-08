@@ -9,7 +9,7 @@ const MAX_PAGES  = 50; // up to 5,000 maps per import run
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
-  if (!user || user.role !== "ADMIN") {
+  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -55,8 +55,8 @@ export async function POST(req: NextRequest) {
       difficulty: number; bpmMin: number; bpmMax: number;
       duration: number; tileCount: number;
       coverImage: string | null; downloadUrl: string | null;
-      description: string | null; tags: string[];
-      status: "APPROVED"; playCount: number; externalId: string;
+      workshopUrl: string | null; description: string | null;
+      tags: string[]; status: "APPROVED"; playCount: number; externalId: string;
     };
 
     const allMaps: MapInput[] = [];
@@ -112,6 +112,7 @@ export async function POST(req: NextRequest) {
       for (const item of items) {
         if (!item.publishedfileid || !item.title) continue;
 
+        const workshopLink = `https://steamcommunity.com/sharedfiles/filedetails/?id=${item.publishedfileid}`;
         allMaps.push({
           title:       item.title,
           artist:      "Unknown",
@@ -122,7 +123,8 @@ export async function POST(req: NextRequest) {
           duration:    0,
           tileCount:   0,
           coverImage:  item.preview_url ?? null,
-          downloadUrl: `https://steamcommunity.com/sharedfiles/filedetails/?id=${item.publishedfileid}`,
+          downloadUrl: workshopLink,
+          workshopUrl: workshopLink,
           description: item.description ? item.description.slice(0, 500) : null,
           tags:        parseSteamTags(item.tags ?? []),
           status:      "APPROVED",

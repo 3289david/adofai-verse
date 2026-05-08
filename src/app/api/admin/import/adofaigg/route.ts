@@ -32,7 +32,7 @@ function getCellValue(c: { v?: unknown } | null | undefined) {
 
 export async function POST() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "ADMIN") {
+  if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -62,11 +62,11 @@ export async function POST() {
 
     // Parse all valid rows
     type MapInput = {
-      title: string; artist: string; creatorId: string;
+      title: string; artist: string; creatorId: string; creatorName: string | null;
       difficulty: number; bpmMin: number; bpmMax: number;
       duration: number; tileCount: number;
-      downloadUrl: string | null; description: string | null;
-      tags: string[]; status: "APPROVED"; externalId: string;
+      downloadUrl: string | null; workshopUrl: string | null; videoUrl: string | null;
+      description: string | null; tags: string[]; status: "APPROVED"; externalId: string;
     };
 
     const parsed: MapInput[] = [];
@@ -82,7 +82,8 @@ export async function POST() {
       const tiles      = get(10);
       const downloadUrl = get(18) as string | null;
       const workshopUrl = get(19) as string | null;
-      const creatorName = get(4) as string | null;
+      const videoUrl    = get(20) as string | null;
+      const creatorName = get(4)  as string | null;
 
       // Skip rows without required fields or with invalid/negative difficulty
       if (!id || !title || difficulty == null || Number(difficulty) <= 0) continue;
@@ -92,25 +93,23 @@ export async function POST() {
         .map(t => String(t));
       const tags = [...new Set(rawTags.map(t => TAG_MAP[t]).filter(Boolean))];
 
-      const desc = [
-        creatorName ? `Creator: ${creatorName}` : null,
-        workshopUrl ? `Workshop: ${workshopUrl}` : null,
-      ].filter(Boolean).join(" | ") || null;
-
       parsed.push({
-        title:       String(title),
-        artist:      String(artist ?? "Unknown"),
-        creatorId:   botUser.id,
-        difficulty:  Number(difficulty),
-        bpmMin:      bpm ? Math.round(Number(bpm)) : 0,
-        bpmMax:      bpm ? Math.round(Number(bpm)) : 0,
-        duration:    0,
-        tileCount:   tiles ? Math.round(Number(tiles)) : 0,
-        downloadUrl: downloadUrl || null,
-        description: desc,
+        title:        String(title),
+        artist:       String(artist ?? "Unknown"),
+        creatorId:    botUser.id,
+        creatorName:  creatorName || null,
+        difficulty:   Number(difficulty),
+        bpmMin:       bpm ? Math.round(Number(bpm)) : 0,
+        bpmMax:       bpm ? Math.round(Number(bpm)) : 0,
+        duration:     0,
+        tileCount:    tiles ? Math.round(Number(tiles)) : 0,
+        downloadUrl:  downloadUrl || null,
+        workshopUrl:  workshopUrl || null,
+        videoUrl:     videoUrl   || null,
+        description:  null,
         tags,
-        status:      "APPROVED",
-        externalId:  `adofaigg:${Math.round(Number(id))}`,
+        status:       "APPROVED",
+        externalId:   `adofaigg:${Math.round(Number(id))}`,
       });
     }
 

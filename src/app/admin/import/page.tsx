@@ -6,6 +6,9 @@ export const metadata = { title: "Data Import — Admin" };
 
 export default async function AdminImportPage() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "ADMIN") redirect("/login");
+  if (!user) redirect("/login");
+  if (user.role !== "ADMIN" && user.role !== "MODERATOR") {
+    redirect("/login?reason=admin_required");
+  }
   return <ImportUI />;
 }
