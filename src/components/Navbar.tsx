@@ -11,6 +11,7 @@ const LINKS = [
   { href: "/analyze",  label: "Analyze"   },
   { href: "/ai",       label: "AI Coach"  },
   { href: "/api-docs", label: "API"       },
+  { href: "/admin/import", label: "Import" },
 ];
 
 export function Navbar() {

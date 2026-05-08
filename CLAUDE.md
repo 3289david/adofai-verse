@@ -42,6 +42,7 @@ Required in `.env.local`:
 DATABASE_URL        PostgreSQL connection string
 JWT_SECRET          Secret for signing JWTs (generate: openssl rand -base64 32)
 NEXT_PUBLIC_APP_URL Public URL of the app
+STEAM_API_KEY       (Optional) Steam Web API key for Workshop import — get free at steamcommunity.com/dev/apikey
 ```
 
 ---

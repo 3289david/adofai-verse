@@ -54,12 +54,14 @@ model Map {
   likeCount   Int       @default(0)
   playCount   Int       @default(0)
   bpmData     Json?
+  externalId  String?   @unique
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   @@index([difficulty])
   @@index([creatorId])
   @@index([status])
+  @@index([externalId])
 }
 
 enum MapStatus {
