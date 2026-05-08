@@ -1,25 +1,38 @@
 "use client";
 
-import { useState, use } from "react";
+import { useState, useEffect, use } from "react";
 import Link from "next/link";
-import { ArrowLeft, Heart, Download, Clock, Music, User, Calendar, Layers, Brain, BarChart2, Trophy } from "lucide-react";
+import { ArrowLeft, Heart, Download, Clock, Music, User, Calendar, Layers, Brain, BarChart2, Trophy, Loader2 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { DifficultyBadge } from "@/components/DifficultyBadge";
-import { MOCK_MAPS } from "@/lib/mock-data";
 import { formatDuration, formatBpm, formatNumber, getDifficultyColor, getDifficultyLabel } from "@/lib/utils";
-import type { AIAnalysisResult } from "@/lib/types";
+import type { MapData, AIAnalysisResult } from "@/lib/types";
 
 const TABS = ["Overview", "BPM Chart", "AI Analysis", "Records"] as const;
 type Tab = (typeof TABS)[number];
 
 export default function MapDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const map = MOCK_MAPS.find(m => m.id === id);
-  const [tab, setTab]     = useState<Tab>("Overview");
-  const [liked, setLiked] = useState(false);
+  const [map,       setMap]       = useState<MapData | null>(null);
+  const [loading,   setLoading]   = useState(true);
+  const [tab,       setTab]       = useState<Tab>("Overview");
+  const [liked,     setLiked]     = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult,  setAiResult]  = useState<AIAnalysisResult | null>(null);
   const [aiError,   setAiError]   = useState("");
+
+  useEffect(() => {
+    fetch(`/api/maps/${id}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { setMap(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [id]);
+
+  if (loading) return (
+    <div className="flex justify-center py-24">
+      <Loader2 size={28} className="text-soft animate-spin" />
+    </div>
+  );
 
   if (!map) return (
     <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">

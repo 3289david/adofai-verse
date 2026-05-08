@@ -2,8 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Brain, Send, User, Sparkles, RefreshCw } from "lucide-react";
-import { MOCK_MAPS } from "@/lib/mock-data";
-import { DifficultyBadge } from "@/components/DifficultyBadge";
+import type { MapData } from "@/lib/types";
 
 interface Msg { id: string; role: "user"|"assistant"; content: string; loading?: boolean; }
 
@@ -15,17 +14,25 @@ const PROMPTS = [
 ];
 
 export default function AICoachPage() {
-  const [msgs, setMsgs]   = useState<Msg[]>([{ id:"0", role:"assistant", content:"Hey! I'm your ADOFAI AI Coach. Ask me anything — improving accuracy, understanding patterns, or choosing maps to practice." }]);
+  const [msgs,  setMsgs]  = useState<Msg[]>([{ id:"0", role:"assistant", content:"Hey! I'm your ADOFAI AI Coach. Ask me anything — improving accuracy, understanding patterns, or choosing maps to practice." }]);
   const [input, setInput] = useState("");
-  const [map,   setMap]   = useState("");
+  const [mapId, setMapId] = useState("");
   const [busy,  setBusy]  = useState(false);
+  const [maps,  setMaps]  = useState<MapData[]>([]);
   const bottom            = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch("/api/maps?limit=100&sort=popular")
+      .then(r => r.json())
+      .then(d => setMaps(d.maps ?? []))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => { bottom.current?.scrollIntoView({ behavior:"smooth" }); }, [msgs]);
 
   async function send(text: string) {
     if (!text.trim() || busy) return;
-    const mapData = MOCK_MAPS.find(m => m.id === map);
+    const mapData = maps.find(m => m.id === mapId);
     const context = mapData ? `User is working on "${mapData.title}" by ${mapData.artist}, difficulty ${mapData.difficulty}.` : "";
 
     setMsgs(p => [...p, { id: Date.now()+"u", role:"user", content:text }, { id:"loading", role:"assistant", content:"", loading:true }]);
@@ -49,7 +56,7 @@ export default function AICoachPage() {
           <h1 className="text-xl font-black text-white flex items-center gap-2"><Brain size={20} className="text-ultra" />AI Coach</h1>
           <p className="text-xs text-soft mt-0.5">Powered by Pollinations AI · Free for everyone</p>
         </div>
-        <button onClick={() => { setMsgs([{ id:"0", role:"assistant", content:"Chat reset! How can I help?" }]); setMap(""); }}
+        <button onClick={() => { setMsgs([{ id:"0", role:"assistant", content:"Chat reset! How can I help?" }]); setMapId(""); }}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-soft border border-line rounded-lg hover:border-line-hi transition-colors">
           <RefreshCw size={11} />Reset
         </button>
@@ -57,10 +64,10 @@ export default function AICoachPage() {
 
       {/* Map context */}
       <div className="mb-3 flex-shrink-0">
-        <select value={map} onChange={e => setMap(e.target.value)}
+        <select value={mapId} onChange={e => setMapId(e.target.value)}
           className="w-full bg-card border border-line rounded-xl px-3 py-2.5 text-sm text-soft outline-none hover:border-line-hi">
           <option value="" style={{background:"#111127"}}>📋 Add map context (optional)</option>
-          {MOCK_MAPS.map(m => <option key={m.id} value={m.id} style={{background:"#111127"}}>[{m.difficulty}] {m.title} — {m.artist}</option>)}
+          {maps.map(m => <option key={m.id} value={m.id} style={{background:"#111127"}}>[{m.difficulty}] {m.title} — {m.artist}</option>)}
         </select>
       </div>
 
