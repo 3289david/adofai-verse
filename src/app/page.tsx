@@ -1,301 +1,104 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, BarChart2, Brain, Trophy, Zap, Search, Flame, Layers } from "lucide-react";
+import { ArrowRight, BarChart2, Brain, Trophy, Search, Layers, Zap } from "lucide-react";
 import { MapCard } from "@/components/MapCard";
 import { MOCK_MAPS, PLATFORM_STATS } from "@/lib/mock-data";
 import { formatNumber } from "@/lib/utils";
 
 const FEATURES = [
-  {
-    icon: Search,
-    title: "Map Database",
-    description: "4,800+ custom maps with advanced filtering by difficulty, BPM, tags, and playstyle.",
-    color: "#0099ff",
-  },
-  {
-    icon: BarChart2,
-    title: "Deep Analysis",
-    description: "Interactive BPM charts, pattern difficulty graphs, and per-section failure rate visualization.",
-    color: "#ff8800",
-  },
-  {
-    icon: Brain,
-    title: "AI Coach",
-    description: "Powered by Pollinations AI — get personalized advice, map breakdowns, and improvement tips.",
-    color: "#cc44ff",
-  },
-  {
-    icon: Trophy,
-    title: "Global Rankings",
-    description: "Track your records against the world. Filter by country, map, or score.",
-    color: "#ff2244",
-  },
-  {
-    icon: Layers,
-    title: "Pattern Library",
-    description: "Browse and identify famous ADOFAI patterns. Improve by understanding what you're playing.",
-    color: "#44dd88",
-  },
-  {
-    icon: Zap,
-    title: "Open API",
-    description: "Developer-friendly REST API. Build your own tools on top of ADOFAI.VERSE data.",
-    color: "#ffdd00",
-  },
+  { icon: Search,    title: "Map Database",   desc: "4,800+ maps. Filter by difficulty, BPM, tags, and style.",          color: "#0077ff" },
+  { icon: BarChart2, title: "Deep Analysis",   desc: "BPM charts and difficulty graphs for every map.",                   color: "#ff8800" },
+  { icon: Brain,     title: "AI Coach",        desc: "Powered by Pollinations AI — free for every user.",                 color: "#cc44ff" },
+  { icon: Trophy,    title: "Rankings",        desc: "Global leaderboard. Track XP, accuracy, and clears.",              color: "#ff3355" },
+  { icon: Layers,    title: "Pattern Library", desc: "Browse ADOFAI patterns and understand what you're playing.",       color: "#44dd88" },
+  { icon: Zap,       title: "Open API",        desc: "Free REST API. Build tools on top of ADOFAI.VERSE data.",          color: "#ffdd00" },
 ];
 
 export default function HomePage() {
-  const featuredMaps = MOCK_MAPS.filter((m) => m.status === "FEATURED").slice(0, 6);
+  const featured = MOCK_MAPS.filter((m) => m.status === "FEATURED").slice(0, 6);
 
   return (
-    <div className="tile-bg">
-      <section className="relative overflow-hidden">
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(255,34,68,0.12) 0%, transparent 60%)",
-          }}
-        />
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(ellipse 50% 40% at 80% 60%, rgba(0,153,255,0.08) 0%, transparent 60%)",
-          }}
-        />
-
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 text-center">
-          <div
-            className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium mb-8"
-            style={{
-              background: "rgba(255,136,0,0.1)",
-              border: "1px solid rgba(255,136,0,0.25)",
-              color: "#ff8800",
-            }}
-          >
-            <Flame size={12} />
+    <div>
+      {/* Hero */}
+      <section className="border-b border-line">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-20 text-center">
+          <p className="text-xs font-bold tracking-widest text-soft uppercase mb-6">
             The Ultimate ADOFAI Platform
-          </div>
-
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-none mb-6">
-            <span
-              style={{
-                background: "linear-gradient(135deg, #ff2244 0%, #ff5500 40%, #ff8800 60%, #ffdd00 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              PLAY.
-            </span>{" "}
-            <span
-              style={{
-                background: "linear-gradient(135deg, #cc44ff 0%, #0099ff 50%, #00ddff 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              ANALYZE.
-            </span>
-            <br />
-            <span style={{ color: "#f0f0ff" }}>DOMINATE.</span>
-          </h1>
-
-          <p
-            className="text-lg sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed"
-            style={{ color: "#7777aa" }}
-          >
-            The most advanced community platform for{" "}
-            <span style={{ color: "#f0f0ff" }}>A Dance of Fire and Ice</span>. Find maps,
-            track your progress, get AI coaching, and compete with players worldwide.
           </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Link
-              href="/maps"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all duration-200 hover:scale-105"
-              style={{
-                background: "linear-gradient(135deg, #ff2244, #ff8800)",
-                color: "white",
-                boxShadow: "0 0 24px rgba(255,34,68,0.3)",
-              }}
-            >
-              Browse Maps
-              <ArrowRight size={16} />
-            </Link>
-            <Link
-              href="/ai"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all duration-200 hover:scale-105"
-              style={{
-                background: "rgba(204,68,255,0.12)",
-                border: "1px solid rgba(204,68,255,0.35)",
-                color: "#cc44ff",
-              }}
-            >
-              <Brain size={16} />
-              Try AI Coach
-            </Link>
+          <h1 className="text-5xl sm:text-6xl font-black tracking-tight mb-6 leading-none">
+            <span className="fire-text">PLAY.</span>{" "}
+            <span className="ice-text">ANALYZE.</span>
+            <br />
+            <span className="text-white">DOMINATE.</span>
+          </h1>
+          <p className="text-lg text-soft max-w-xl mx-auto mb-10">
+            Maps, rankings, AI coaching, and deep analytics — all in one place.
+          </p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link href="/maps"    className="px-6 py-2.5 fire-btn text-sm">Browse Maps <ArrowRight size={14} className="inline ml-1" /></Link>
+            <Link href="/ai"      className="px-6 py-2.5 text-sm font-bold bg-card border border-line hover:border-line-hi rounded-lg text-soft hover:text-white transition-colors">Try AI Coach</Link>
           </div>
+        </div>
+      </section>
 
-          <div
-            className="mt-16 grid grid-cols-2 sm:grid-cols-4 gap-6 max-w-3xl mx-auto"
-          >
-            {[
-              { label: "Maps", value: PLATFORM_STATS.totalMaps, color: "#ff8800" },
-              { label: "Players", value: PLATFORM_STATS.totalPlayers, color: "#0099ff" },
-              { label: "Records", value: PLATFORM_STATS.totalRecords, color: "#cc44ff" },
-              { label: "Today", value: PLATFORM_STATS.todayRecords, color: "#44dd88" },
-            ].map(({ label, value, color }) => (
-              <div
-                key={label}
-                className="text-center p-4 rounded-xl"
-                style={{ background: "rgba(16,16,30,0.6)", border: "1px solid rgba(26,26,53,0.8)" }}
-              >
-                <div
-                  className="text-2xl sm:text-3xl font-black tabular-nums"
-                  style={{ color }}
-                >
-                  {formatNumber(value)}
+      {/* Stats */}
+      <section className="border-b border-line bg-card/40">
+        <div className="mx-auto max-w-4xl px-4 py-6 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+          {[
+            { label: "Maps",         value: PLATFORM_STATS.totalMaps,    color: "#ff8800" },
+            { label: "Players",      value: PLATFORM_STATS.totalPlayers,  color: "#0077ff" },
+            { label: "Records",      value: PLATFORM_STATS.totalRecords,  color: "#cc44ff" },
+            { label: "Today",        value: PLATFORM_STATS.todayRecords,  color: "#44dd88" },
+          ].map(({ label, value, color }) => (
+            <div key={label}>
+              <div className="text-2xl font-black tabular-nums" style={{ color }}>{formatNumber(value)}</div>
+              <div className="text-xs text-soft mt-0.5">{label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Featured Maps */}
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-black text-white">Featured Maps</h2>
+          <Link href="/maps" className="text-sm text-fire hover:underline flex items-center gap-1">
+            All maps <ArrowRight size={13} />
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          {featured.map((m) => <MapCard key={m.id} map={m} />)}
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="border-t border-line bg-card/20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14">
+          <h2 className="text-xl font-black text-white mb-8 text-center">Everything you need to improve</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {FEATURES.map(({ icon: Icon, title, desc, color }) => (
+              <div key={title} className="bg-card border border-line rounded-xl p-5 hover:border-line-hi transition-colors">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-4" style={{ background: `${color}18`, border: `1px solid ${color}30` }}>
+                  <Icon size={17} style={{ color }} />
                 </div>
-                <div className="text-xs mt-0.5" style={{ color: "#7777aa" }}>
-                  {label}
-                </div>
+                <p className="font-bold text-sm text-white mb-1">{title}</p>
+                <p className="text-sm text-soft">{desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-2xl font-black" style={{ color: "#f0f0ff" }}>
-              Featured Maps
-            </h2>
-            <p className="text-sm mt-1" style={{ color: "#7777aa" }}>
-              Hand-picked by our community
-            </p>
+      {/* CTA */}
+      <section className="border-t border-line">
+        <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+          <h2 className="text-2xl font-black text-white mb-3">Ready to start?</h2>
+          <p className="text-soft mb-8">Join 38,000+ players on the most advanced ADOFAI platform.</p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link href="/register" className="px-8 py-3 fire-btn text-sm">Create Free Account</Link>
+            <Link href="/maps"     className="px-8 py-3 text-sm font-bold bg-card border border-line rounded-lg text-soft hover:text-white transition-colors">Browse Maps</Link>
           </div>
-          <Link
-            href="/maps"
-            className="inline-flex items-center gap-1.5 text-sm font-medium transition-all duration-200 hover:gap-2.5"
-            style={{ color: "#ff8800" }}
-          >
-            View all <ArrowRight size={14} />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          {featuredMaps.map((map) => (
-            <MapCard key={map.id} map={map} />
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-black" style={{ color: "#f0f0ff" }}>
-            Everything you need to{" "}
-            <span
-              style={{
-                background: "linear-gradient(135deg, #ff2244, #ff8800)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              improve
-            </span>
-          </h2>
-          <p className="text-base mt-3 max-w-xl mx-auto" style={{ color: "#7777aa" }}>
-            ADOFAI.VERSE is the only platform you need to master A Dance of Fire and Ice
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {FEATURES.map(({ icon: Icon, title, description, color }) => (
-            <div
-              key={title}
-              className="p-5 rounded-xl border transition-all duration-300 hover:-translate-y-1 group"
-              style={{
-                background: "rgba(16,16,30,0.8)",
-                borderColor: "rgba(26,26,53,0.8)",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = `${color}44`;
-                (e.currentTarget as HTMLElement).style.boxShadow = `0 8px 24px ${color}12`;
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = "rgba(26,26,53,0.8)";
-                (e.currentTarget as HTMLElement).style.boxShadow = "none";
-              }}
-            >
-              <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center mb-4"
-                style={{
-                  background: `${color}18`,
-                  border: `1px solid ${color}33`,
-                }}
-              >
-                <Icon size={18} style={{ color }} />
-              </div>
-              <h3 className="font-bold text-sm mb-2" style={{ color: "#f0f0ff" }}>
-                {title}
-              </h3>
-              <p className="text-sm leading-relaxed" style={{ color: "#7777aa" }}>
-                {description}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section
-        className="mx-4 sm:mx-8 lg:mx-auto max-w-4xl my-16 p-12 rounded-2xl text-center overflow-hidden relative"
-        style={{
-          background:
-            "linear-gradient(135deg, rgba(255,34,68,0.12), rgba(204,68,255,0.08), rgba(0,153,255,0.12))",
-          border: "1px solid rgba(255,34,68,0.2)",
-        }}
-      >
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage:
-              "radial-gradient(ellipse 60% 60% at 50% 50%, rgba(255,34,68,0.06) 0%, transparent 70%)",
-          }}
-        />
-        <h2 className="relative text-3xl font-black mb-4" style={{ color: "#f0f0ff" }}>
-          Ready to start your journey?
-        </h2>
-        <p className="relative text-base mb-8" style={{ color: "#7777aa" }}>
-          Join 38,000+ players tracking their ADOFAI progress on the most advanced platform ever built.
-        </p>
-        <div className="relative flex flex-wrap justify-center gap-3">
-          <Link
-            href="/register"
-            className="px-8 py-3 rounded-xl font-bold text-sm transition-all duration-200 hover:scale-105"
-            style={{
-              background: "linear-gradient(135deg, #ff2244, #ff8800)",
-              color: "white",
-              boxShadow: "0 0 24px rgba(255,34,68,0.3)",
-            }}
-          >
-            Create Free Account
-          </Link>
-          <Link
-            href="/maps"
-            className="px-8 py-3 rounded-xl font-bold text-sm transition-all duration-200"
-            style={{
-              border: "1px solid rgba(240,240,255,0.15)",
-              color: "#f0f0ff",
-            }}
-          >
-            Explore Maps
-          </Link>
         </div>
       </section>
     </div>

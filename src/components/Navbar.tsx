@@ -3,173 +3,75 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, X, Flame, BarChart2, Brain, Search, Trophy, Code2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Menu, X } from "lucide-react";
 
-const NAV_LINKS = [
-  { href: "/maps", label: "Maps", icon: Search },
-  { href: "/rankings", label: "Rankings", icon: Trophy },
-  { href: "/analyze", label: "Analyze", icon: BarChart2 },
-  { href: "/ai", label: "AI Coach", icon: Brain },
-  { href: "/api-docs", label: "API", icon: Code2 },
+const LINKS = [
+  { href: "/maps",     label: "Maps"      },
+  { href: "/rankings", label: "Rankings"  },
+  { href: "/analyze",  label: "Analyze"   },
+  { href: "/ai",       label: "AI Coach"  },
+  { href: "/api-docs", label: "API"       },
 ];
 
 export function Navbar() {
-  const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const path = usePathname();
+  const [open, setOpen] = useState(false);
 
   return (
-    <header
-      className="sticky top-0 z-50 w-full"
-      style={{
-        background: "rgba(7,7,15,0.85)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        borderBottom: "1px solid rgba(26,26,53,0.8)",
-      }}
-    >
+    <header className="sticky top-0 z-50 bg-page/90 backdrop-blur border-b border-line">
       <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-        <Link
-          href="/"
-          className="flex items-center gap-2 group"
-          onClick={() => setMobileOpen(false)}
-        >
-          <div
-            className="w-7 h-7 rounded flex items-center justify-center transition-all duration-300"
-            style={{
-              background: "linear-gradient(135deg, #ff2244, #ff8800)",
-            }}
-          >
-            <Flame size={14} color="white" />
-          </div>
-          <span
-            className="font-black text-lg tracking-tight"
-            style={{
-              background: "linear-gradient(135deg, #ff2244, #ff8800, #cc44ff)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
-          >
-            ADOFAI<span style={{ WebkitTextFillColor: "#f0f0ff", backgroundClip: "unset" }}>.VERSE</span>
+
+        <Link href="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
+          <span className="w-7 h-7 rounded fire-btn flex items-center justify-center text-sm font-black">A</span>
+          <span className="font-black text-base tracking-tight">
+            <span className="fire-text">ADOFAI</span>
+            <span className="text-white">.VERSE</span>
           </span>
         </Link>
 
         <div className="hidden md:flex items-center gap-1">
-          {NAV_LINKS.map(({ href, label, icon: Icon }) => {
-            const active = pathname.startsWith(href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200",
-                  active
-                    ? "text-white"
-                    : "text-[#7777aa] hover:text-white"
-                )}
-                style={
-                  active
-                    ? {
-                        background: "rgba(255,34,68,0.12)",
-                        border: "1px solid rgba(255,34,68,0.25)",
-                        color: "#ff8888",
-                      }
-                    : { border: "1px solid transparent" }
-                }
-              >
-                <Icon size={14} />
-                {label}
-              </Link>
-            );
-          })}
+          {LINKS.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                path.startsWith(href)
+                  ? "bg-fire/10 text-fire border border-fire/20"
+                  : "text-soft hover:text-white hover:bg-card"
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
         </div>
 
         <div className="hidden md:flex items-center gap-2">
-          <Link
-            href="/login"
-            className="px-4 py-1.5 text-sm font-medium rounded-lg transition-all duration-200"
-            style={{
-              color: "#7777aa",
-              border: "1px solid rgba(26,26,53,0.8)",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.color = "#f0f0ff";
-              (e.currentTarget as HTMLElement).style.borderColor = "rgba(46,46,90,1)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.color = "#7777aa";
-              (e.currentTarget as HTMLElement).style.borderColor = "rgba(26,26,53,0.8)";
-            }}
-          >
-            Log in
-          </Link>
-          <Link
-            href="/register"
-            className="px-4 py-1.5 text-sm font-bold rounded-lg transition-all duration-200"
-            style={{
-              background: "linear-gradient(135deg, #ff2244, #ff8800)",
-              color: "white",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.opacity = "0.88";
-              (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.opacity = "1";
-              (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
-            }}
-          >
-            Sign Up
-          </Link>
+          <Link href="/login"    className="px-4 py-1.5 text-sm font-medium text-soft hover:text-white border border-line hover:border-line-hi rounded-lg transition-colors">Log in</Link>
+          <Link href="/register" className="px-4 py-1.5 text-sm fire-btn">Sign Up</Link>
         </div>
 
-        <button
-          className="md:hidden p-2 rounded-lg"
-          style={{ color: "#7777aa" }}
-          onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label="Toggle menu"
-        >
-          {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+        <button className="md:hidden p-2 text-soft" onClick={() => setOpen(!open)}>
+          {open ? <X size={20} /> : <Menu size={20} />}
         </button>
       </nav>
 
-      {mobileOpen && (
-        <div
-          className="md:hidden px-4 pb-4 flex flex-col gap-1"
-          style={{ borderTop: "1px solid rgba(26,26,53,0.8)" }}
-        >
-          {NAV_LINKS.map(({ href, label, icon: Icon }) => {
-            const active = pathname.startsWith(href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium"
-                style={{
-                  color: active ? "#ff8888" : "#7777aa",
-                  background: active ? "rgba(255,34,68,0.1)" : "transparent",
-                }}
-              >
-                <Icon size={16} />
-                {label}
-              </Link>
-            );
-          })}
-          <div className="flex gap-2 mt-2 pt-2" style={{ borderTop: "1px solid rgba(26,26,53,0.8)" }}>
-            <Link href="/login" onClick={() => setMobileOpen(false)}
-              className="flex-1 text-center py-2 text-sm rounded-lg"
-              style={{ color: "#7777aa", border: "1px solid rgba(26,26,53,0.8)" }}
+      {open && (
+        <div className="md:hidden border-t border-line px-4 py-3 flex flex-col gap-1 bg-page">
+          {LINKS.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              onClick={() => setOpen(false)}
+              className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                path.startsWith(href) ? "bg-fire/10 text-fire" : "text-soft"
+              }`}
             >
-              Log in
+              {label}
             </Link>
-            <Link href="/register" onClick={() => setMobileOpen(false)}
-              className="flex-1 text-center py-2 text-sm font-bold rounded-lg"
-              style={{ background: "linear-gradient(135deg, #ff2244, #ff8800)", color: "white" }}
-            >
-              Sign Up
-            </Link>
+          ))}
+          <div className="flex gap-2 mt-2 pt-2 border-t border-line">
+            <Link href="/login"    onClick={() => setOpen(false)} className="flex-1 text-center py-2 text-sm text-soft border border-line rounded-lg">Log in</Link>
+            <Link href="/register" onClick={() => setOpen(false)} className="flex-1 text-center py-2 text-sm fire-btn">Sign Up</Link>
           </div>
         </div>
       )}

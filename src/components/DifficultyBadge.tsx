@@ -1,46 +1,21 @@
-import { getDifficultyColor, getDifficultyLabel } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { getDifficultyColor } from "@/lib/utils";
 
 interface DifficultyBadgeProps {
   difficulty: number;
   size?: "sm" | "md" | "lg";
   showLabel?: boolean;
-  className?: string;
 }
 
-export function DifficultyBadge({
-  difficulty,
-  size = "md",
-  showLabel = false,
-  className,
-}: DifficultyBadgeProps) {
+export function DifficultyBadge({ difficulty, size = "md", showLabel = false }: DifficultyBadgeProps) {
   const color = getDifficultyColor(difficulty);
-  const label = getDifficultyLabel(difficulty);
-
-  const sizeClasses = {
-    sm: "text-xs px-1.5 py-0.5 min-w-[28px]",
-    md: "text-sm px-2 py-1 min-w-[36px]",
-    lg: "text-base px-3 py-1.5 min-w-[44px]",
-  };
+  const pad = size === "sm" ? "px-1.5 py-0.5 text-xs" : size === "lg" ? "px-3 py-1.5 text-base" : "px-2 py-1 text-sm";
 
   return (
     <span
-      className={cn(
-        "inline-flex items-center justify-center gap-1 rounded font-bold tabular-nums",
-        "border",
-        sizeClasses[size],
-        className
-      )}
-      style={{
-        color,
-        borderColor: `${color}44`,
-        backgroundColor: `${color}18`,
-      }}
+      className={`inline-flex items-center gap-1 rounded font-bold tabular-nums ${pad}`}
+      style={{ color, borderColor: `${color}44`, backgroundColor: `${color}18`, border: `1px solid ${color}44` }}
     >
-      <span>{difficulty % 1 === 0 ? difficulty : difficulty.toFixed(1)}</span>
-      {showLabel && (
-        <span className="font-normal opacity-80 text-xs">{label}</span>
-      )}
+      {difficulty % 1 === 0 ? difficulty : difficulty.toFixed(1)}
     </span>
   );
 }

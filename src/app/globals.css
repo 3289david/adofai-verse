@@ -1,150 +1,45 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@theme {
-  --font-sans: "Inter", "Noto Sans KR", system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-  --color-bg: #07070f;
-  --color-bg-secondary: #0d0d1f;
-  --color-card: #10101e;
-  --color-card-hover: #141430;
-  --color-border: #1a1a35;
-  --color-border-bright: #2e2e5a;
-
-  --color-fire: #ff2244;
-  --color-fire-mid: #ff5500;
-  --color-fire-end: #ff8800;
-  --color-ice: #0066ff;
-  --color-ice-mid: #0099ff;
-  --color-ice-end: #00ddff;
-
-  --color-easy: #44dd88;
-  --color-medium: #ffdd00;
-  --color-hard: #ff8800;
-  --color-extreme: #ff2244;
-  --color-ultra: #cc44ff;
-
-  --color-text: #f0f0ff;
-  --color-muted: #7777aa;
-  --color-dim: #44445a;
-
-  --color-success: #44dd88;
-  --color-warning: #ffdd00;
-  --color-error: #ff2244;
-}
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html {
-  scroll-behavior: smooth;
-  color-scheme: dark;
-}
+html { color-scheme: dark; scroll-behavior: smooth; }
 
 body {
-  background-color: #07070f;
+  background-color: #09091a;
   color: #f0f0ff;
-  font-family: var(--font-sans);
-  min-height: 100vh;
+  font-family: Inter, system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
 }
 
-::selection {
-  background: rgba(255, 34, 68, 0.3);
-  color: #fff;
-}
+::selection { background: rgba(255, 51, 85, 0.25); color: #fff; }
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #0d0d1f;
-}
-::-webkit-scrollbar-thumb {
-  background: #2e2e5a;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #ff2244;
-}
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #09091a; }
+::-webkit-scrollbar-thumb { background: #2a2a58; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #ff3355; }
 
-.gradient-fire {
-  background: linear-gradient(135deg, #ff2244, #ff5500, #ff8800);
+.fire-text {
+  background: linear-gradient(135deg, #ff3355, #ff8800);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-.gradient-ice {
-  background: linear-gradient(135deg, #0066ff, #0099ff, #00ddff);
+.ice-text {
+  background: linear-gradient(135deg, #0077ff, #00ccff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-.gradient-combined {
-  background: linear-gradient(135deg, #ff2244, #ff5500, #cc44ff, #0099ff, #00ddff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.fire-btn {
+  background: linear-gradient(135deg, #ff3355, #ff8800);
+  color: white;
+  font-weight: 700;
+  border-radius: 10px;
+  transition: opacity 0.15s, transform 0.15s;
 }
-
-.glow-fire {
-  box-shadow: 0 0 20px rgba(255, 34, 68, 0.4), 0 0 40px rgba(255, 85, 0, 0.2);
-}
-
-.glow-ice {
-  box-shadow: 0 0 20px rgba(0, 153, 255, 0.4), 0 0 40px rgba(0, 221, 255, 0.2);
-}
-
-.card-glass {
-  background: rgba(16, 16, 30, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(30, 30, 60, 0.8);
-}
-
-.tile-bg {
-  background-image:
-    linear-gradient(rgba(255, 34, 68, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 34, 68, 0.03) 1px, transparent 1px);
-  background-size: 32px 32px;
-}
-
-.noise-bg {
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-}
-
-@keyframes pulse-fire {
-  0%, 100% { opacity: 1; box-shadow: 0 0 10px rgba(255, 34, 68, 0.3); }
-  50% { opacity: 0.8; box-shadow: 0 0 30px rgba(255, 85, 0, 0.6); }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% center; }
-  100% { background-position: 200% center; }
-}
-
-.animate-pulse-fire {
-  animation: pulse-fire 2s ease-in-out infinite;
-}
-
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-
-.shimmer {
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.05) 50%, transparent 100%);
-  background-size: 200% auto;
-  animation: shimmer 2s linear infinite;
-}
+.fire-btn:hover { opacity: 0.88; transform: translateY(-1px); }
