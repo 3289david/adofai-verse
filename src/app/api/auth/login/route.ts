@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { signToken, setAuthCookie } from "@/lib/auth";
+import { signToken, setTokenCookie } from "@/lib/auth";
 
 const schema = z.object({
   email: z.string().email(),
@@ -30,9 +30,13 @@ export async function POST(req: NextRequest) {
       role: user.role,
     });
 
-    await setAuthCookie(token);
-
-    return NextResponse.json({ id: user.id, username: user.username, email: user.email });
+    const response = NextResponse.json({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+    });
+    return setTokenCookie(response, token);
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.errors[0].message }, { status: 400 });
