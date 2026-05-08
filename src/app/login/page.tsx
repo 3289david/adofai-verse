@@ -31,8 +31,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/");
-      router.refresh();
+      window.location.href = "/";
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -63,7 +62,7 @@ export default function LoginPage() {
             Welcome back
           </h1>
           <p className="text-sm mt-1" style={{ color: "#7777aa" }}>
-            Sign in to ADOFAI.VERSE
+            Sign in to ADOFAI.NET
           </p>
         </div>
 

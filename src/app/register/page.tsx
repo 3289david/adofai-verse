@@ -32,8 +32,7 @@ export default function RegisterPage() {
         return;
       }
 
-      router.push("/");
-      router.refresh();
+      window.location.href = "/";
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -65,7 +64,7 @@ export default function RegisterPage() {
             <Flame size={22} color="white" />
           </div>
           <h1 className="text-2xl font-black mb-2" style={{ color: "#f0f0ff" }}>
-            Join ADOFAI.VERSE
+            Join ADOFAI.NET
           </h1>
           <p className="text-sm mb-6" style={{ color: "#7777aa" }}>
             The ultimate platform for ADOFAI players

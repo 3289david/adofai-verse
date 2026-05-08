@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -50,20 +51,46 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const body = await req.json();
-    const map  = await db.map.create({
+    const {
+      title, artist, difficulty, bpmMin, bpmMax,
+      duration, tileCount, coverImage, downloadUrl,
+      description, tags, bpmData, videoUrl,
+    } = body;
+
+    if (!title || !artist) {
+      return NextResponse.json({ error: "title and artist are required" }, { status: 400 });
+    }
+
+    const isPrivileged = user.role === "ADMIN" || user.role === "MODERATOR";
+    const status = isPrivileged ? "APPROVED" : "PENDING";
+
+    const map = await db.map.create({
       data: {
-        title: body.title, artist: body.artist, creatorId: body.creatorId,
-        difficulty: body.difficulty, bpmMin: body.bpmMin, bpmMax: body.bpmMax,
-        duration: body.duration, tileCount: body.tileCount,
-        coverImage: body.coverImage, downloadUrl: body.downloadUrl,
-        description: body.description, tags: body.tags ?? [], bpmData: body.bpmData,
+        title,
+        artist,
+        creatorId:   user.id,
+        difficulty:  Number(difficulty ?? 0),
+        bpmMin:      Number(bpmMin ?? 0),
+        bpmMax:      Number(bpmMax ?? 0),
+        duration:    Number(duration ?? 0),
+        tileCount:   Number(tileCount ?? 0),
+        coverImage:  coverImage ?? null,
+        downloadUrl: downloadUrl ?? null,
+        description: description ?? null,
+        videoUrl:    videoUrl ?? null,
+        tags:        tags ?? [],
+        bpmData:     bpmData ?? null,
+        status,
       },
       include: { creator: { select: { id: true, username: true, avatar: true } } },
     });
     return NextResponse.json(map, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: "Failed to create map" }, { status: 500 });
+  } catch (e) {
+    return NextResponse.json({ error: String(e) }, { status: 500 });
   }
 }
