@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  email        String    @unique
+  passwordHash String
+  avatar       String?
+  bio          String?
+  country      String?
+  role         UserRole  @default(PLAYER)
+  createdMaps  Map[]     @relation("MapCreator")
+  records      Record[]
+  likes        MapLike[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([username])
+  @@index([email])
+}
+
+enum UserRole {
+  PLAYER
+  CREATOR
+  MODERATOR
+  ADMIN
+}
+
+model Map {
+  id          String    @id @default(cuid())
+  title       String
+  artist      String
+  creator     User      @relation("MapCreator", fields: [creatorId], references: [id])
+  creatorId   String
+  difficulty  Float
+  bpmMin      Int
+  bpmMax      Int
+  duration    Int
+  tileCount   Int
+  coverImage  String?
+  downloadUrl String?
+  description String?
+  tags        String[]
+  status      MapStatus @default(PENDING)
+  records     Record[]
+  likes       MapLike[]
+  likeCount   Int       @default(0)
+  playCount   Int       @default(0)
+  bpmData     Json?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([difficulty])
+  @@index([creatorId])
+  @@index([status])
+}
+
+enum MapStatus {
+  PENDING
+  APPROVED
+  FEATURED
+  REMOVED
+}
+
+model Record {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  map       Map      @relation(fields: [mapId], references: [id])
+  mapId     String
+  accuracy  Float
+  attempts  Int      @default(1)
+  cleared   Boolean  @default(false)
+  score     Int      @default(0)
+  xp        Int      @default(0)
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, mapId])
+  @@index([mapId, accuracy(sort: Desc)])
+  @@index([userId])
+}
+
+model MapLike {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  map       Map      @relation(fields: [mapId], references: [id])
+  mapId     String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, mapId])
+}
