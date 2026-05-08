@@ -6,16 +6,17 @@ import { Navbar } from "@/components/Navbar";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: {
-    template: "%s | ADOFAI.VERSE",
-    default: "ADOFAI.VERSE — The Ultimate ADOFAI Platform",
-  },
+  title: "ADOFAI.VERSE — The Ultimate ADOFAI Platform",
   description:
     "The most advanced ADOFAI (A Dance of Fire and Ice) platform. Discover maps, track records, analyze patterns, and get AI-powered coaching.",
   keywords: ["ADOFAI", "A Dance of Fire and Ice", "rhythm game", "custom maps", "rankings"],
+  icons: {
+    icon: "/icon",
+    shortcut: "/icon",
+  },
   openGraph: {
-    title: "ADOFAI.VERSE",
-    description: "The Ultimate ADOFAI Platform",
+    title: "ADOFAI.VERSE — The Ultimate ADOFAI Platform",
+    description: "The most advanced ADOFAI community platform.",
     type: "website",
   },
 };

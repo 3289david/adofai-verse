@@ -7,7 +7,7 @@ import {
   Clock, Music, User, Calendar, Layers
 } from "lucide-react";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area,
 } from "recharts";
 import { DifficultyBadge } from "@/components/DifficultyBadge";
 import { MOCK_MAPS } from "@/lib/mock-data";

@@ -11,6 +11,15 @@ const nextConfig: NextConfig = {
   experimental: {
     serverActions: { allowedOrigins: ["*"] },
   },
+  async redirects() {
+    return [
+      {
+        source: "/favicon.ico",
+        destination: "/icon",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

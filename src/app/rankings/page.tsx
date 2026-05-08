@@ -73,7 +73,6 @@ export default function RankingsPage() {
       <div className="grid grid-cols-3 gap-4 mb-8">
         {[top3[1], top3[0], top3[2]].map((entry, i) => {
           if (!entry) return null;
-          const podiumOrder = [1, 0, 2];
           const heights = ["h-32", "h-40", "h-28"];
           const trophyColors = ["#c0c0c0", "#ffd700", "#cd7f32"];
           const golds = ["#c0c0c0", "#ffd700", "#cd7f32"];
