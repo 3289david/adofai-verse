@@ -51,8 +51,6 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!turnstileToken) { setError("Please complete the human verification challenge."); return; }
-
     setLoading(true);
     setError("");
 
@@ -202,7 +200,7 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={loading || !turnstileToken}
+            disabled={loading}
             className="w-full py-3 rounded-xl font-bold text-sm transition-all disabled:opacity-60 flex items-center justify-center gap-2"
             style={{ background: "linear-gradient(135deg, #ff2244, #ff8800)", color: "white" }}
           >
