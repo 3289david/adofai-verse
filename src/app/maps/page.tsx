@@ -10,6 +10,7 @@ const TAGS  = ["#wave","#spam","#precision","#speed","#pattern","#stream","#tech
 const SORTS = [
   { value:"popular",         label:"Most Popular"  },
   { value:"newest",          label:"Newest"        },
+  { value:"random",          label:"🎲 Random"      },
   { value:"difficulty_asc",  label:"Easiest First" },
   { value:"difficulty_desc", label:"Hardest First" },
   { value:"bpm",             label:"Highest BPM"   },
@@ -144,7 +145,15 @@ export default function MapsPage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {maps.map(m => <MapCard key={m.id} map={m} />)}
           </div>
-          {hasMore && (
+          {sort === "random" ? (
+            <div className="mt-8 text-center">
+              <button onClick={() => fetchMaps(1)} disabled={loading}
+                className="px-8 py-2.5 bg-card border border-line rounded-xl text-sm text-soft hover:border-line-hi disabled:opacity-50 transition-colors inline-flex items-center gap-2">
+                {loading && <Loader2 size={13} className="animate-spin" />}
+                🎲 Shuffle again
+              </button>
+            </div>
+          ) : hasMore && (
             <div className="mt-8 text-center">
               <button onClick={() => fetchMaps(page + 1, true)} disabled={more}
                 className="px-8 py-2.5 bg-card border border-line rounded-xl text-sm text-soft hover:border-line-hi disabled:opacity-50 transition-colors inline-flex items-center gap-2">

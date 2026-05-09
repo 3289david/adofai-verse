@@ -37,7 +37,17 @@ export function Navbar({ user }: NavbarProps) {
       <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
 
         <Link href="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
-          <span className="w-7 h-7 rounded fire-btn flex items-center justify-center text-sm font-black">A</span>
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="logo-g" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+                <stop stopColor="#ff2244"/>
+                <stop offset="0.5" stopColor="#cc33ff"/>
+                <stop offset="1" stopColor="#0077ff"/>
+              </linearGradient>
+            </defs>
+            <rect width="28" height="28" rx="6" fill="url(#logo-g)"/>
+            <rect x="9" y="9" width="10" height="10" rx="1.5" fill="white" transform="rotate(45 14 14)"/>
+          </svg>
           <span className="font-black text-base tracking-tight">
             <span className="fire-text">ADOFAI</span>
             <span className="text-white">.NET</span>

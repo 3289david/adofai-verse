@@ -22,8 +22,10 @@ export function MapCard({ map }: { map: MapData }) {
           {thumb ? (
             <img src={thumb} alt={map.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <span className="text-4xl font-black text-line-hi group-hover:text-line transition-colors select-none">♪</span>
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-page to-card">
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="opacity-30 group-hover:opacity-50 transition-opacity">
+                <rect x="5" y="5" width="30" height="30" rx="4" fill="currentColor" transform="rotate(45 20 20)" className="text-soft"/>
+              </svg>
             </div>
           )}
           {/* Gradient overlay for readability */}

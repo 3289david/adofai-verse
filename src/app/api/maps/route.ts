@@ -12,26 +12,46 @@ export async function GET(req: NextRequest) {
   const page    = Math.max(1, Number(searchParams.get("page") ?? 1));
   const limit   = Math.min(Number(searchParams.get("limit") ?? 24), 100);
 
-  try {
-    const orderBy =
-      sort === "newest"          ? { createdAt: "desc" as const }   :
-      sort === "difficulty_asc"  ? { difficulty: "asc"  as const }  :
-      sort === "difficulty_desc" ? { difficulty: "desc" as const }  :
-      sort === "bpm"             ? { bpmMax: "desc" as const }      :
-                                   { playCount: "desc" as const };
+  const where = {
+    status: { in: ["APPROVED", "FEATURED"] as ("APPROVED" | "FEATURED")[] },
+    difficulty: { gte: diffMin, lte: diffMax },
+    ...(search && {
+      OR: [
+        { title:   { contains: search, mode: "insensitive" as const } },
+        { artist:  { contains: search, mode: "insensitive" as const } },
+        { creator: { username: { contains: search, mode: "insensitive" as const } } },
+        { creatorName: { contains: search, mode: "insensitive" as const } },
+      ],
+    }),
+    ...(tags.length && { tags: { hasEvery: tags } }),
+  };
 
-    const where = {
-      status: { in: ["APPROVED", "FEATURED"] as ("APPROVED" | "FEATURED")[] },
-      difficulty: { gte: diffMin, lte: diffMax },
-      ...(search && {
-        OR: [
-          { title:   { contains: search, mode: "insensitive" as const } },
-          { artist:  { contains: search, mode: "insensitive" as const } },
-          { creator: { username: { contains: search, mode: "insensitive" as const } } },
-        ],
-      }),
-      ...(tags.length && { tags: { hasEvery: tags } }),
-    };
+  try {
+    if (sort === "random") {
+      // Use random ordering via raw SQL for PostgreSQL
+      const randomIds = await db.$queryRaw<{ id: string }[]>`
+        SELECT id FROM "Map"
+        WHERE status IN ('APPROVED', 'FEATURED')
+        ORDER BY RANDOM()
+        LIMIT ${limit}
+      `;
+      const ids = randomIds.map((r) => r.id);
+      if (ids.length === 0) return NextResponse.json({ maps: [], total: 0, page: 1, limit });
+      const maps = await db.map.findMany({
+        where: { id: { in: ids } },
+        include: { creator: { select: { id: true, username: true, avatar: true } } },
+      });
+      const ordered = ids.map(id => maps.find(m => m.id === id)).filter(Boolean);
+      const total   = await db.map.count({ where: { status: { in: ["APPROVED", "FEATURED"] } } });
+      return NextResponse.json({ maps: ordered, total, page: 1, limit });
+    }
+
+    const orderBy =
+      sort === "newest"          ? { createdAt:  "desc" as const } :
+      sort === "difficulty_asc"  ? { difficulty: "asc"  as const } :
+      sort === "difficulty_desc" ? { difficulty: "desc" as const } :
+      sort === "bpm"             ? { bpmMax:     "desc" as const } :
+                                   { playCount:  "desc" as const };
 
     const [maps, total] = await Promise.all([
       db.map.findMany({

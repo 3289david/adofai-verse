@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     );
 
     type MapInput = {
-      title: string; artist: string; creatorId: string;
+      title: string; artist: string; creatorId: string; creatorName: string | null;
       difficulty: number; bpmMin: number; bpmMax: number;
       duration: number; tileCount: number;
       coverImage: string | null; downloadUrl: string | null;
@@ -128,15 +128,18 @@ export async function POST(req: NextRequest) {
         if (!item.publishedfileid || !item.title) continue;
 
         const workshopLink = `https://steamcommunity.com/sharedfiles/filedetails/?id=${item.publishedfileid}`;
+        const meta = parseMetaFromSteam(item.title, item.description ?? "");
+        const tagDiff = extractDifficulty(item.tags ?? []);
         allMaps.push({
-          title:       item.title,
-          artist:      "Unknown",
+          title:       meta.songTitle || item.title,
+          artist:      meta.artist || "Unknown",
           creatorId:   botUser.id,
-          difficulty:  extractDifficulty(item.tags ?? []),
-          bpmMin:      0,
-          bpmMax:      0,
+          creatorName: meta.artist || null,
+          difficulty:  tagDiff > 0 ? tagDiff : meta.difficulty,
+          bpmMin:      meta.bpmMin,
+          bpmMax:      meta.bpmMax,
           duration:    0,
-          tileCount:   0,
+          tileCount:   meta.tileCount,
           coverImage:  item.preview_url ?? null,
           downloadUrl: workshopLink,
           workshopUrl: workshopLink,
@@ -194,6 +197,50 @@ interface SteamFile {
   preview_url?:    string;
   subscriptions?:  number;
   tags?:           { tag: string }[];
+}
+
+function parseMetaFromSteam(
+  rawTitle: string,
+  description: string
+): { songTitle: string; artist: string; bpmMin: number; bpmMax: number; difficulty: number; tileCount: number } {
+  // Extract artist from "Artist - Song Name" pattern
+  let songTitle = rawTitle.trim();
+  let artist = "";
+  const dashMatch = rawTitle.match(/^(.+?)\s*[-–—]\s*(.+)$/);
+  if (dashMatch) {
+    artist    = dashMatch[1].trim();
+    songTitle = dashMatch[2].trim();
+  }
+
+  const desc = (description || "").replace(/\[\/?\w+\]/g, " "); // strip BBCode
+
+  // BPM: "180~200 BPM", "BPM: 180-200", "200BPM", "BPM 200"
+  let bpmMin = 0, bpmMax = 0;
+  const bpmRange  = desc.match(/(\d+)\s*[~-]\s*(\d+)\s*bpm/i) ?? desc.match(/bpm[:\s]*(\d+)\s*[~-]\s*(\d+)/i);
+  const bpmSingle = desc.match(/\b(\d{2,4})\s*bpm\b/i) ?? desc.match(/\bbpm[:\s]+(\d{2,4})\b/i);
+  if (bpmRange) {
+    bpmMin = Math.min(parseInt(bpmRange[1]), parseInt(bpmRange[2]));
+    bpmMax = Math.max(parseInt(bpmRange[1]), parseInt(bpmRange[2]));
+  } else if (bpmSingle) {
+    const v = parseInt(bpmSingle[1]);
+    if (v >= 40 && v <= 9999) { bpmMin = v; bpmMax = v; }
+  }
+
+  // Difficulty
+  let difficulty = 0;
+  const diffMatch = desc.match(/(?:difficulty|diff|level|lv)[:\s.]*(\d+(?:\.\d+)?)/i)
+                 ?? rawTitle.match(/\[(?:lv|level|diff(?:iculty)?)[.:\s]*(\d+(?:\.\d+)?)\]/i);
+  if (diffMatch) {
+    const d = parseFloat(diffMatch[1]);
+    if (d > 0 && d <= 99) difficulty = Math.min(d, 21);
+  }
+
+  // Tile count
+  let tileCount = 0;
+  const tileMatch = desc.match(/(\d+)\s*tile/i) ?? desc.match(/tile[s\s]*[:\s]*(\d+)/i);
+  if (tileMatch) tileCount = parseInt(tileMatch[1]);
+
+  return { songTitle, artist, bpmMin, bpmMax, difficulty, tileCount };
 }
 
 function parseSteamTags(tags: { tag: string }[]): string[] {
