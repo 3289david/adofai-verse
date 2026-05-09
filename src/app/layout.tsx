@@ -57,7 +57,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   <Link href="/rankings" className="hover:text-white transition-colors">Rankings</Link>
                   <Link href="/analyze" className="hover:text-white transition-colors">Analyze</Link>
                   <Link href="/upload" className="hover:text-white transition-colors">Upload Map</Link>
-                  <Link href="/coach" className="hover:text-white transition-colors">AI Coach</Link>
+                  <Link href="/ai" className="hover:text-white transition-colors">AI Coach</Link>
                 </div>
               </div>
 

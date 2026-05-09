@@ -2,18 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { Menu, X, LogOut, Shield, Upload, User } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Menu, X, LogOut, Shield, Upload, User, Bookmark, ChevronDown } from "lucide-react";
 import type { AuthUser } from "@/lib/types";
 
-const LINKS = [
-  { href: "/maps",     label: "Maps"     },
+const NAV_LINKS = [
+  { href: "/maps",    label: "Maps" },
   { href: "/rankings", label: "Rankings" },
-  { href: "/analyze",  label: "Analyze"  },
-  { href: "/ai",       label: "AI Coach" },
-  { href: "/upload",   label: "Upload"   },
-  { href: "/bookmarks", label: "Saved"  },
-  { href: "/about",    label: "About"    },
+  { href: "/analyze", label: "Analyze" },
+  { href: "/ai",      label: "AI Coach" },
 ];
 
 interface NavbarProps {
@@ -22,13 +19,26 @@ interface NavbarProps {
 
 export function Navbar({ user }: NavbarProps) {
   const path = usePathname();
-  const [open,        setOpen]        = useState(false);
-  const [loggingOut,  setLoggingOut]  = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   async function handleLogout() {
     setLoggingOut(true);
     await fetch("/api/auth/logout", { method: "POST" });
-    setOpen(false);
+    setMobileOpen(false);
+    setProfileOpen(false);
     window.location.href = "/";
   }
 
@@ -38,7 +48,7 @@ export function Navbar({ user }: NavbarProps) {
     <header className="sticky top-0 z-50 bg-page/90 backdrop-blur border-b border-line">
       <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
 
-        <Link href="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
+        <Link href="/" className="flex items-center gap-2" onClick={() => setMobileOpen(false)}>
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
             <defs>
               <linearGradient id="logo-g" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
@@ -58,7 +68,7 @@ export function Navbar({ user }: NavbarProps) {
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-1">
-          {LINKS.map(({ href, label }) => (
+          {NAV_LINKS.map(({ href, label }) => (
             <Link key={href} href={href}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 path.startsWith(href)
@@ -83,55 +93,102 @@ export function Navbar({ user }: NavbarProps) {
         {/* Desktop auth */}
         <div className="hidden md:flex items-center gap-2">
           {user ? (
-            <>
-              {isAdmin && (
-                <span className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-bold bg-ultra/10 text-ultra border border-ultra/20">
-                  <Shield size={10} />{user.role}
-                </span>
-              )}
-              <Link href={`/profile/${user.username}`}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-soft hover:text-white border border-transparent hover:border-line rounded-lg transition-colors">
-                <User size={13} />{user.username}
-              </Link>
-              <button onClick={handleLogout} disabled={loggingOut}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-soft border border-line hover:border-line-hi hover:text-white rounded-lg transition-colors disabled:opacity-50">
-                <LogOut size={13} />{loggingOut ? "…" : "Log out"}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setProfileOpen(!profileOpen)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                  profileOpen ? "bg-card border border-line text-white" : "text-soft hover:text-white border border-transparent hover:border-line"
+                }`}
+              >
+                <User size={13} />
+                {user.username}
+                {isAdmin && (
+                  <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-ultra/10 text-ultra border border-ultra/20 ml-1">
+                    <Shield size={8} />{user.role}
+                  </span>
+                )}
+                <ChevronDown size={12} className={`transition-transform ${profileOpen ? "rotate-180" : ""}`} />
               </button>
-            </>
+
+              {profileOpen && (
+                <div
+                  className="absolute right-0 top-full mt-1.5 w-48 py-1.5 rounded-xl overflow-hidden"
+                  style={{ background: "rgba(16,16,30,0.98)", border: "1px solid rgba(26,26,53,0.8)", backdropFilter: "blur(16px)" }}
+                >
+                  <Link href={`/profile/${user.username}`} onClick={() => setProfileOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-soft hover:text-white hover:bg-white/5 transition-colors">
+                    <User size={14} />My Profile
+                  </Link>
+                  <Link href="/upload" onClick={() => setProfileOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-soft hover:text-white hover:bg-white/5 transition-colors">
+                    <Upload size={14} />Upload Map
+                  </Link>
+                  <Link href="/bookmarks" onClick={() => setProfileOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-soft hover:text-white hover:bg-white/5 transition-colors">
+                    <Bookmark size={14} />Saved Maps
+                  </Link>
+                  <div className="my-1.5 border-t" style={{ borderColor: "rgba(26,26,53,0.8)" }} />
+                  <button onClick={handleLogout} disabled={loggingOut}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-soft hover:text-fire hover:bg-fire/5 transition-colors disabled:opacity-50">
+                    <LogOut size={14} />{loggingOut ? "Logging out…" : "Log out"}
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
             <>
-              <Link href="/login"    className="px-4 py-1.5 text-sm font-medium text-soft hover:text-white border border-line hover:border-line-hi rounded-lg transition-colors">Log in</Link>
+              <Link href="/login" className="px-4 py-1.5 text-sm font-medium text-soft hover:text-white border border-line hover:border-line-hi rounded-lg transition-colors">Log in</Link>
               <Link href="/register" className="px-4 py-1.5 text-sm fire-btn">Sign Up</Link>
             </>
           )}
         </div>
 
-        <button className="md:hidden p-2 text-soft" onClick={() => setOpen(!open)}>
-          {open ? <X size={20} /> : <Menu size={20} />}
+        <button className="md:hidden p-2 text-soft" onClick={() => setMobileOpen(!mobileOpen)}>
+          {mobileOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
       </nav>
 
       {/* Mobile menu */}
-      {open && (
+      {mobileOpen && (
         <div className="md:hidden border-t border-line px-4 py-3 flex flex-col gap-1 bg-page">
-          {LINKS.map(({ href, label }) => (
-            <Link key={href} href={href} onClick={() => setOpen(false)}
+          {NAV_LINKS.map(({ href, label }) => (
+            <Link key={href} href={href} onClick={() => setMobileOpen(false)}
               className={`px-3 py-2 rounded-lg text-sm font-medium ${
                 path.startsWith(href) ? "bg-fire/10 text-fire" : "text-soft"
               }`}>
               {label}
             </Link>
           ))}
+
+          {user && (
+            <>
+              <div className="my-1 border-t border-line" />
+              <Link href="/upload" onClick={() => setMobileOpen(false)}
+                className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${
+                  path === "/upload" ? "bg-fire/10 text-fire" : "text-soft"
+                }`}>
+                <Upload size={13} />Upload Map
+              </Link>
+              <Link href="/bookmarks" onClick={() => setMobileOpen(false)}
+                className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${
+                  path === "/bookmarks" ? "bg-fire/10 text-fire" : "text-soft"
+                }`}>
+                <Bookmark size={13} />Saved Maps
+              </Link>
+            </>
+          )}
+
           {isAdmin && (
-            <Link href="/admin/import" onClick={() => setOpen(false)}
-              className="px-3 py-2 rounded-lg text-sm font-medium text-dim flex items-center gap-1.5">
+            <Link href="/admin/import" onClick={() => setMobileOpen(false)}
+              className="px-3 py-2 rounded-lg text-sm font-medium text-dim flex items-center gap-2">
               <Upload size={12} />Import Data
             </Link>
           )}
+
           <div className="mt-2 pt-2 border-t border-line">
             {user ? (
               <div className="flex items-center justify-between">
-                <Link href={`/profile/${user.username}`} onClick={() => setOpen(false)}
+                <Link href={`/profile/${user.username}`} onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-2">
                   {isAdmin && (
                     <span className="text-xs font-bold px-2 py-0.5 rounded bg-ultra/10 text-ultra border border-ultra/20">
@@ -147,8 +204,8 @@ export function Navbar({ user }: NavbarProps) {
               </div>
             ) : (
               <div className="flex gap-2">
-                <Link href="/login"    onClick={() => setOpen(false)} className="flex-1 text-center py-2 text-sm text-soft border border-line rounded-lg">Log in</Link>
-                <Link href="/register" onClick={() => setOpen(false)} className="flex-1 text-center py-2 text-sm fire-btn">Sign Up</Link>
+                <Link href="/login" onClick={() => setMobileOpen(false)} className="flex-1 text-center py-2 text-sm text-soft border border-line rounded-lg">Log in</Link>
+                <Link href="/register" onClick={() => setMobileOpen(false)} className="flex-1 text-center py-2 text-sm fire-btn">Sign Up</Link>
               </div>
             )}
           </div>
