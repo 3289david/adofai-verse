@@ -5,7 +5,8 @@ import Link from "next/link";
 import {
   ArrowLeft, Heart, Download, Clock, Music, User, Calendar, Layers,
   Brain, BarChart2, Trophy, Loader2, Youtube, ExternalLink, Play,
-  RefreshCw, Shield, Globe, CheckCircle, Send,
+  RefreshCw, Shield, Globe, CheckCircle, Send, MessageCircle,
+  Share2, Link2, Copy, Check,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -15,7 +16,7 @@ import {
   formatDuration, formatBpm, formatNumber,
   getDifficultyColor, getDifficultyLabel,
 } from "@/lib/utils";
-import type { MapData, MapRecord, AIAnalysisResult, AuthUser } from "@/lib/types";
+import type { MapData, MapRecord, AIAnalysisResult, AuthUser, CommentData } from "@/lib/types";
 
 const FLAGS: Record<string, string> = {
   KR: "🇰🇷", JP: "🇯🇵", US: "🇺🇸", CN: "🇨🇳", GB: "🇬🇧",
@@ -50,7 +51,7 @@ function estimateDuration(tileCount: number, bpmMin: number, bpmMax: number): nu
   return Math.round(tileCount * 60 / avg);
 }
 
-const TABS = ["Overview", "BPM Chart", "Video", "AI Analysis", "Records"] as const;
+const TABS = ["Overview", "BPM Chart", "Video", "AI Analysis", "Records", "Comments"] as const;
 type Tab = typeof TABS[number];
 
 export default function MapDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -89,6 +90,17 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
   const [editSaving,  setEditSaving]  = useState(false);
   const [editError,   setEditError]   = useState("");
 
+  const [comments,    setComments]    = useState<CommentData[]>([]);
+  const [commentText, setCommentText] = useState("");
+  const [commentLoad, setCommentLoad] = useState(false);
+  const [commentPost, setCommentPost] = useState(false);
+
+  // Share state
+  const [copied, setCopied] = useState<"link" | "discord" | null>(null);
+
+  // Similar maps
+  const [similarMaps, setSimilarMaps] = useState<MapData[]>([]);
+
   useEffect(() => {
     Promise.all([
       fetch(`/api/maps/${id}`).then(r => r.ok ? r.json() : null),
@@ -103,6 +115,50 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (tab === "Comments" && comments.length === 0) {
+      setCommentLoad(true);
+      fetch(`/api/maps/${id}/comments`)
+        .then(r => r.json())
+        .then(d => setComments(d.comments ?? []))
+        .catch(() => {})
+        .finally(() => setCommentLoad(false));
+    }
+  }, [tab, id, comments.length]);
+
+  useEffect(() => {
+    fetch(`/api/maps/${id}/similar`)
+      .then(r => r.ok ? r.json() : [])
+      .then(d => setSimilarMaps(Array.isArray(d) ? d : []))
+      .catch(() => {});
+  }, [id]);
+
+  function copyToClipboard(text: string, type: "link" | "discord") {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(type);
+      setTimeout(() => setCopied(null), 2000);
+    });
+  }
+
+  function shareOnTwitter() {
+    if (!map) return;
+    const url = window.location.href;
+    const text = `Check out "${map.title}" by ${map.artist} on ADOFAI.VERSE!`;
+    window.open(
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  }
+
+  function shareDiscord() {
+    if (!map) return;
+    const url = window.location.href;
+    const diff = map.difficulty.toFixed(1);
+    const md = `**${map.title}** by ${map.artist} (Difficulty ${diff} ★) — ${url}`;
+    copyToClipboard(md, "discord");
+  }
 
   if (loading) return (
     <div className="flex justify-center py-24">
@@ -186,6 +242,25 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
       setEditing(false);
     } catch { setEditError("Network error."); }
     finally  { setEditSaving(false); }
+  }
+
+  async function postComment(e: React.FormEvent) {
+    e.preventDefault();
+    if (!commentText.trim() || commentPost) return;
+    setCommentPost(true);
+    try {
+      const r = await fetch(`/api/maps/${id}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: commentText.trim() }),
+      });
+      if (r.ok) {
+        const c = await r.json();
+        setComments(prev => [c, ...prev]);
+        setCommentText("");
+      }
+    } catch {}
+    finally { setCommentPost(false); }
   }
 
   async function runAI() {
@@ -323,6 +398,37 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
                   <Heart size={13} fill={liked ? "currentColor" : "none"} />
                   {formatNumber(likeCount)}
                 </button>
+
+                {/* Share buttons */}
+                <div className="flex items-center gap-1 ml-1 pl-3 border-l" style={{ borderColor: "rgba(26,26,53,0.8)" }}>
+                  <button
+                    onClick={() => copyToClipboard(window.location.href, "link")}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border transition-colors"
+                    style={{ background: "rgba(16,16,30,0.6)", borderColor: "rgba(26,26,53,0.8)", color: copied === "link" ? "#44dd88" : "#7777aa" }}
+                    title="Copy link"
+                  >
+                    {copied === "link" ? <Check size={13} /> : <Link2 size={13} />}
+                    <span className="text-xs">{copied === "link" ? "Copied!" : "Copy Link"}</span>
+                  </button>
+                  <button
+                    onClick={shareOnTwitter}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border transition-colors hover:text-white"
+                    style={{ background: "rgba(16,16,30,0.6)", borderColor: "rgba(26,26,53,0.8)", color: "#7777aa" }}
+                    title="Share on X / Twitter"
+                  >
+                    <Share2 size={13} />
+                    <span className="text-xs">Twitter</span>
+                  </button>
+                  <button
+                    onClick={shareDiscord}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border transition-colors"
+                    style={{ background: "rgba(16,16,30,0.6)", borderColor: "rgba(26,26,53,0.8)", color: copied === "discord" ? "#44dd88" : "#7777aa" }}
+                    title="Copy Discord message"
+                  >
+                    {copied === "discord" ? <Check size={13} /> : <Copy size={13} />}
+                    <span className="text-xs">{copied === "discord" ? "Copied!" : "Discord"}</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -351,7 +457,7 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
         {TABS.map(t => {
           const icons: Record<Tab, React.ComponentType<{ size?: number }>> = {
             Overview: BarChart2, "BPM Chart": Music, Video: Youtube,
-            "AI Analysis": Brain, Records: Trophy,
+            "AI Analysis": Brain, Records: Trophy, Comments: MessageCircle,
           };
           const Icon = icons[t];
           const dim = (t === "Video" && !hasVideo) || (t === "BPM Chart" && map.bpmMin === 0);
@@ -744,7 +850,122 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
             </div>
           </div>
         )}
+
+        {/* COMMENTS */}
+        {tab === "Comments" && (
+          <div>
+            <p className="text-sm font-bold text-white mb-4">Discussion</p>
+
+            {currentUser ? (
+              <form onSubmit={postComment} className="mb-5">
+                <textarea
+                  value={commentText} onChange={e => setCommentText(e.target.value)}
+                  maxLength={500} rows={3} required
+                  placeholder="Share your thoughts about this map..."
+                  className="w-full px-3 py-2.5 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none resize-none mb-2"
+                />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-dim">{commentText.length}/500</span>
+                  <button type="submit" disabled={commentPost || !commentText.trim()}
+                    className="px-4 py-2 fire-btn text-sm disabled:opacity-50 flex items-center gap-1.5">
+                    <Send size={12} />{commentPost ? "Posting..." : "Post Comment"}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="flex items-center justify-between gap-4 p-4 bg-page border border-line rounded-xl mb-5">
+                <p className="text-sm text-soft">Log in to join the discussion.</p>
+                <div className="flex gap-2">
+                  <Link href="/login" className="px-4 py-2 text-sm border border-line rounded-xl text-soft hover:border-line-hi transition-colors">Log in</Link>
+                  <Link href="/register" className="px-4 py-2 text-sm fire-btn">Sign Up</Link>
+                </div>
+              </div>
+            )}
+
+            {commentLoad ? (
+              <div className="flex justify-center py-10">
+                <Loader2 size={20} className="text-soft animate-spin" />
+              </div>
+            ) : comments.length === 0 ? (
+              <div className="flex flex-col items-center py-10 gap-2 text-center">
+                <MessageCircle size={28} className="text-dim" />
+                <p className="text-soft text-sm">No comments yet — be the first!</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {comments.map(c => (
+                  <div key={c.id} className="flex gap-3 p-3 bg-page border border-line rounded-xl">
+                    <div className="w-8 h-8 rounded-full bg-line flex items-center justify-center text-xs font-bold text-soft flex-shrink-0">
+                      {c.user.avatar
+                        ? <img src={c.user.avatar} alt="" className="w-full h-full rounded-full object-cover" />
+                        : c.user.username[0].toUpperCase()
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Link href={`/profile/${c.user.username}`} className="text-sm font-medium text-white hover:underline">{c.user.username}</Link>
+                        <span className="text-xs text-dim">{new Date(c.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                      </div>
+                      <p className="text-sm text-soft leading-relaxed whitespace-pre-wrap">{c.content}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* ── Similar Maps ── */}
+      {similarMaps.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-lg font-bold mb-4" style={{ color: "#f0f0ff" }}>Similar Maps</h2>
+          <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "thin" }}>
+            {similarMaps.map(sm => {
+              const smDc = getDifficultyColor(sm.difficulty);
+              const ytThumb = sm.videoUrl
+                ? (() => {
+                    const m = sm.videoUrl!.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([a-zA-Z0-9_-]{11})/);
+                    return m?.[1] ? `https://img.youtube.com/vi/${m[1]}/mqdefault.jpg` : null;
+                  })()
+                : null;
+              const thumb = sm.coverImage || ytThumb;
+
+              return (
+                <Link
+                  key={sm.id}
+                  href={`/maps/${sm.id}`}
+                  className="flex-shrink-0 w-44 group block rounded-xl overflow-hidden border transition-colors hover:border-opacity-60"
+                  style={{ background: "rgba(16,16,30,0.6)", borderColor: "rgba(26,26,53,0.8)" }}
+                >
+                  <div className="h-24 relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${smDc}15, #07070f)` }}>
+                    {thumb ? (
+                      <img src={thumb} alt={sm.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Music size={24} style={{ color: smDc, opacity: 0.4 }} />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    <div className="absolute bottom-1.5 left-1.5">
+                      <span
+                        className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                        style={{ background: `${smDc}22`, color: smDc, border: `1px solid ${smDc}40` }}
+                      >
+                        Lv.{sm.difficulty}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-2.5">
+                    <p className="text-xs font-bold truncate" style={{ color: "#f0f0ff" }}>{sm.title}</p>
+                    <p className="text-[11px] truncate mt-0.5" style={{ color: "#7777aa" }}>{sm.artist}</p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

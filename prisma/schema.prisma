@@ -19,6 +19,8 @@ model User {
   createdMaps  Map[]     @relation("MapCreator")
   records      Record[]
   likes        MapLike[]
+  comments     Comment[]
+  bookmarks    Bookmark[]
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
@@ -51,6 +53,8 @@ model Map {
   status      MapStatus @default(PENDING)
   records     Record[]
   likes       MapLike[]
+  comments    Comment[]
+  bookmarks   Bookmark[]
   likeCount   Int       @default(0)
   playCount   Int       @default(0)
   bpmData      Json?
@@ -104,4 +108,29 @@ model MapLike {
   createdAt DateTime @default(now())
 
   @@unique([userId, mapId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  map       Map      @relation(fields: [mapId], references: [id])
+  mapId     String
+  createdAt DateTime @default(now())
+
+  @@index([mapId, createdAt(sort: Desc)])
+  @@index([userId])
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  mapId     String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  map       Map      @relation(fields: [mapId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mapId])
+  @@index([userId])
 }

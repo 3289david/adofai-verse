@@ -12,6 +12,8 @@ const LINKS = [
   { href: "/analyze",  label: "Analyze"  },
   { href: "/ai",       label: "AI Coach" },
   { href: "/upload",   label: "Upload"   },
+  { href: "/bookmarks", label: "Saved"  },
+  { href: "/about",    label: "About"    },
 ];
 
 interface NavbarProps {

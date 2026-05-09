@@ -9,6 +9,7 @@ import type { MapData } from "@/lib/types";
 const TAGS  = ["#wave","#spam","#precision","#speed","#pattern","#stream","#technical","#beginner-friendly"];
 const SORTS = [
   { value:"popular",         label:"Most Popular"  },
+  { value:"trending",        label:"🔥 Trending"    },
   { value:"newest",          label:"Newest"        },
   { value:"random",          label:"🎲 Random"      },
   { value:"difficulty_asc",  label:"Easiest First" },
@@ -131,8 +132,21 @@ export default function MapsPage() {
 
       {/* Grid */}
       {loading ? (
-        <div className="flex justify-center py-24">
-          <Loader2 size={28} className="text-soft animate-spin" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={i} className="rounded-xl overflow-hidden" style={{ background: "rgba(16,16,30,0.6)", border: "1px solid rgba(26,26,53,0.8)" }}>
+              <div className="h-28 skeleton" />
+              <div className="p-3">
+                <div className="h-4 w-3/4 skeleton mb-2" />
+                <div className="h-3 w-1/2 skeleton mb-3" />
+                <div className="h-3 w-1/3 skeleton mb-2" />
+                <div className="flex gap-2 pt-2" style={{ borderTop: "1px solid rgba(26,26,53,0.8)" }}>
+                  <div className="h-3 w-8 skeleton" />
+                  <div className="h-3 w-8 skeleton" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : maps.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 bg-card border border-line rounded-xl text-center">

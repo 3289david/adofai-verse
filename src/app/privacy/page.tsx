@@ -73,7 +73,7 @@ We may update this Privacy Policy from time to time. We will notify users of sig
 
 ## 11. Contact
 
-For privacy inquiries, contact us via GitHub Issues at the ADOFAI.NET repository.`;
+For privacy inquiries, email legal@adofai.net. For general help, email help@adofai.net. GitHub: https://github.com/3289david/adofai-verse`;
 
 const KR = `# 개인정보 처리방침
 
@@ -146,7 +146,7 @@ AI 코칭 기능은 텍스트 생성을 위해 익명화된 맵 메타데이터�
 
 ## 11. 문의
 
-개인정보 관련 문의는 ADOFAI.NET 저장소의 GitHub Issues를 통해 연락 주시기 바랍니다.`;
+개인정보 관련 문의는 legal@adofai.net 으로 이메일을 보내주세요. 일반 문의: help@adofai.net. GitHub: https://github.com/3289david/adofai-verse`;
 
 export default function PrivacyPage() {
   const [lang, setLang] = useState<"en" | "kr">("en");

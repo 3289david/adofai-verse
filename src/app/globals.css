@@ -66,6 +66,26 @@ input:focus, textarea:focus, select:focus {
   outline: none;
 }
 
+/* Skeleton loading animation */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.25; }
+}
+.skeleton {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  background: rgba(119, 119, 170, 0.3);
+  border-radius: 8px;
+}
+
+/* Card hover effects */
+.map-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.map-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(255, 34, 68, 0.15);
+}
+
 /* Recharts responsive fix */
 .recharts-wrapper {
   width: 100% !important;

@@ -46,6 +46,25 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ maps: ordered, total, page: 1, limit });
     }
 
+    if (sort === "trending") {
+      const rows = await db.$queryRaw<{ id: string }[]>`
+        SELECT id FROM "Map"
+        WHERE status IN ('APPROVED', 'FEATURED')
+          AND difficulty >= ${diffMin} AND difficulty <= ${diffMax}
+        ORDER BY "likeCount" * 2 + "playCount" + EXTRACT(EPOCH FROM "createdAt") / 86400 DESC
+        LIMIT ${limit} OFFSET ${(page - 1) * limit}
+      `;
+      const ids = rows.map(r => r.id);
+      if (ids.length === 0) return NextResponse.json({ maps: [], total: 0, page, limit });
+      const maps = await db.map.findMany({
+        where: { id: { in: ids } },
+        include: { creator: { select: { id: true, username: true, avatar: true } } },
+      });
+      const ordered = ids.map(id => maps.find(m => m.id === id)).filter(Boolean);
+      const total = await db.map.count({ where });
+      return NextResponse.json({ maps: ordered, total, page, limit });
+    }
+
     const orderBy =
       sort === "newest"          ? { createdAt:  "desc" as const } :
       sort === "difficulty_asc"  ? { difficulty: "asc"  as const } :

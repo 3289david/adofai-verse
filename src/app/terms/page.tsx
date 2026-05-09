@@ -57,7 +57,7 @@ We may update these Terms at any time. Continued use of the Service after change
 
 ## 10. Contact
 
-For questions, contact us via GitHub Issues at the ADOFAI.NET repository.`;
+For questions, contact us at legal@adofai.net or visit our GitHub at https://github.com/3289david/adofai-verse`;
 
 const KR = `# 이용약관
 
@@ -114,7 +114,7 @@ ADOFAI.NET에 맵, 기록 등의 콘텐츠를 제출함으로써 귀하는:
 
 ## 10. 문의
 
-문의 사항은 ADOFAI.NET 저장소의 GitHub Issues를 통해 연락 주시기 바랍니다.`;
+문의 사항은 legal@adofai.net 으로 이메일을 보내시거나 GitHub(https://github.com/3289david/adofai-verse)를 방문해 주세요.`;
 
 export default function TermsPage() {
   const [lang, setLang] = useState<"en" | "kr">("en");

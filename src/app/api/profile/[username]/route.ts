@@ -23,10 +23,10 @@ export async function GET(
           },
         },
         records: {
-          orderBy: { accuracy: "desc" },
-          take:    10,
+          orderBy: { createdAt: "desc" },
           select:  {
-            id: true, accuracy: true, cleared: true, score: true, xp: true, createdAt: true,
+            id: true, accuracy: true, cleared: true, score: true, xp: true,
+            attempts: true, createdAt: true,
             map: { select: { id: true, title: true, artist: true, difficulty: true } },
           },
         },

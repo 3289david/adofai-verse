@@ -21,6 +21,17 @@ export interface MapRecord {
   };
 }
 
+export interface CommentData {
+  id:        string;
+  content:   string;
+  createdAt: string;
+  user: {
+    id:       string;
+    username: string;
+    avatar:   string | null;
+  };
+}
+
 export interface MapData {
   id:          string;
   title:       string;
@@ -119,6 +130,13 @@ export interface AIAnalysisResult {
   recommended_for:        string;
   hardest_section:        string;
   practice_advice:        string;
+}
+
+export interface BookmarkData {
+  id: string;
+  mapId: string;
+  createdAt: string;
+  map: MapData;
 }
 
 export interface AuthUser {

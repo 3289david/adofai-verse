@@ -1,30 +1,44 @@
-# ADOFAI.VERSE
+# ADOFAI.NET
 
 **The Ultimate Community Platform for A Dance of Fire and Ice**
 
-Map database · Global rankings · AI coaching · .adofai analyzer · Open REST API
+Map database · Global rankings · AI coaching · .adofai analyzer · Bookmarks · Comments · Open REST API
+
+[Live Site](https://adofai.net) · [API Docs](https://adofai.net/api-docs) · [Report Issue](https://github.com/3289david/adofai-verse/issues)
 
 ---
 
-## What's Inside
+## Features
 
 | Feature | Details |
 |---|---|
-| **Map Browser** | Search, filter by difficulty / BPM / tags, sort by popularity or newest. Serves 4,700+ imported maps from adofai.gg + Steam Workshop. |
-| **Global Rankings** | XP-based leaderboard. Sort by total XP, maps cleared, or average accuracy. Podium view for top 3. |
-| **.adofai Analyzer** | Upload a level file → BPM timeline chart + section difficulty breakdown (Recharts). |
+| **Map Browser** | Search, filter by difficulty / BPM / tags, sort by popular, trending, random, newest, or difficulty. Skeleton loading, hover animations, 4,700+ maps. |
+| **Map of the Day** | Featured map on the home page, changes daily with a fire-gradient spotlight card. |
+| **Map Detail** | BPM timeline chart, AI analysis, records leaderboard, comments, share buttons, similar maps. |
+| **Bookmarks** | Save maps for later. Bookmark icon on every card, dedicated `/bookmarks` page. |
+| **Comments** | Comment on any map. Threaded per-map discussions with user avatars. |
+| **Social Sharing** | Share maps to Twitter/X, Discord (formatted markdown), or copy link — all from the map detail page. |
+| **Similar Maps** | "Similar Maps" row on each map page, matched by difficulty range and overlapping tags. |
+| **Global Rankings** | XP-based leaderboard with podium view for top 3. Sort by XP, maps cleared, or accuracy. |
+| **Profile Stats** | Recharts accuracy distribution, difficulty donut chart, recent activity timeline, 6 summary stat cards. |
+| **.adofai Analyzer** | Upload a level file → BPM timeline chart + section difficulty breakdown. |
 | **AI Coach** | Free chat coach powered by Pollinations AI — no API key required. Optional per-map context. |
-| **AI Map Analysis** | One-click per-map breakdown: difficulty explanation, play style, tips, hardest section, recommended for. |
+| **AI Map Analysis** | One-click per-map breakdown: difficulty explanation, play style, tips, hardest section. |
 | **Auth** | Register / login via JWT + bcrypt. Role system: PLAYER → CREATOR → MODERATOR → ADMIN. |
-| **Data Import** | Admin UI at `/admin/import` pulls live data from adofai.gg (Google Sheets, 4,734 maps) and Steam Workshop (appid 977950). |
-| **Open REST API** | All map/ranking data served via documented REST endpoints at `/api-docs`. |
+| **Map Editing** | Creators and admins can fix map metadata (title, artist, difficulty, BPM, tags) inline. |
+| **Data Import** | Admin UI pulls live data from adofai.gg (4,734 maps) and Steam Workshop (5,000+ items). |
+| **Open REST API** | All map/ranking/bookmark/comment data via documented REST endpoints at `/api-docs`. |
+| **Toast Notifications** | Context-based toast system for action feedback (success/error/info). |
+| **Scroll to Top** | Floating button appears when scrolled down. |
+| **Skeleton Loading** | Pulsing skeleton cards while maps load instead of a plain spinner. |
+| **Card Animations** | Map cards lift with a subtle red glow on hover. |
 
 ---
 
 ## Data Sources
 
 ### adofai.gg
-Fetches the official ranked map list directly from the Google Sheets spreadsheet backing the adofai.gg website (discovered by reverse-engineering the [`xyz.krmentos:adofai-gg-api`](https://libraries.io/maven/xyz.krmentos:adofai-gg-api/1.0.0) Java library from Maven Central).
+Fetches the official ranked map list directly from the Google Sheets spreadsheet backing the adofai.gg website.
 
 - **4,734 maps** with difficulty, BPM, tile count, download links
 - 17 Korean gameplay tags automatically mapped to English (`#질주` → `#stream`, `#동시치기` → `#precision`, etc.)
@@ -34,9 +48,9 @@ Fetches the official ranked map list directly from the Google Sheets spreadsheet
 Uses the Steam Web API `IPublishedFileService/QueryFiles` endpoint for ADOFAI (AppID 977950).
 
 - Up to **5,000 workshop items** per import run (100 per page × 50 pages)
-- Cover image from Steam preview URL
+- Artist extracted from "Artist - Song" title pattern
+- BPM, difficulty, tile count parsed from description via regex
 - Subscriber count stored as play count
-- Difficulty extracted from item tags if present (e.g. `Difficulty:20.3`)
 - Requires a free [Steam Web API key](https://steamcommunity.com/dev/apikey)
 
 ---
@@ -47,7 +61,7 @@ Uses the Steam Web API `IPublishedFileService/QueryFiles` endpoint for ADOFAI (A
 |---|---|
 | Framework | Next.js 15 (App Router, Turbopack in dev) |
 | Language | TypeScript (strict) |
-| Styling | Tailwind CSS 3 (`tailwind.config.ts`) |
+| Styling | Tailwind CSS 4 (CSS-first `@theme` config) |
 | Database | PostgreSQL via Prisma 6 |
 | Charts | Recharts |
 | AI | Pollinations AI (free, no API key needed) |
@@ -58,23 +72,48 @@ Uses the Steam Web API `IPublishedFileService/QueryFiles` endpoint for ADOFAI (A
 
 ## REST API
 
-All endpoints return JSON. Full interactive docs at `/api-docs`.
+All endpoints return JSON. Full interactive docs at [`/api-docs`](https://adofai.net/api-docs).
+
+### Public Endpoints (no auth required)
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/api/maps` | List maps — params: `search`, `diffMin`, `diffMax`, `tags[]`, `sort`, `page`, `limit` |
+| `GET` | `/api/maps` | List maps — search, filter, sort, paginate |
 | `GET` | `/api/maps/:id` | Single map + top 10 records |
-| `POST` | `/api/maps` | Create map |
-| `GET` | `/api/rankings` | Global XP rankings — param: `limit` |
+| `GET` | `/api/maps/:id/similar` | Up to 6 similar maps by difficulty and tags |
+| `GET` | `/api/maps/:id/comments` | Latest 50 comments on a map |
+| `GET` | `/api/rankings` | Global XP rankings |
 | `GET` | `/api/stats` | Platform counts (maps, players, records) |
+
+### AI Endpoints (no auth required)
+
+| Method | Endpoint | Description |
+|---|---|---|
 | `POST` | `/api/ai/analyze` | AI map analysis via Pollinations |
 | `POST` | `/api/ai/coach` | AI coach chat via Pollinations |
-| `POST` | `/api/auth/register` | Register |
-| `POST` | `/api/auth/login` | Login (sets httpOnly cookie) |
-| `POST` | `/api/admin/import/adofaigg` | **Admin** — import from adofai.gg Sheets |
-| `POST` | `/api/admin/import/steam` | **Admin** — import from Steam Workshop |
 
-### `/api/maps` parameters
+### Authenticated Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/auth/register` | Register a new account |
+| `POST` | `/api/auth/login` | Login (sets httpOnly cookie) |
+| `POST` | `/api/auth/logout` | Logout (clears cookie) |
+| `GET` | `/api/auth/me` | Current authenticated user |
+| `GET/POST` | `/api/bookmarks` | List or toggle bookmarks |
+| `POST` | `/api/maps/:id/comments` | Post a comment (1–500 chars) |
+| `GET/POST` | `/api/maps/:id/like` | Check or toggle like |
+| `PATCH` | `/api/maps/:id` | Edit map metadata (creator/admin) |
+| `POST` | `/api/records` | Submit a record with video URL |
+
+### Admin Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/admin/import/adofaigg` | Import from adofai.gg Sheets |
+| `POST` | `/api/admin/import/steam` | Import from Steam Workshop |
+
+### `/api/maps` Query Parameters
 
 | Param | Default | Description |
 |---|---|---|
@@ -82,7 +121,7 @@ All endpoints return JSON. Full interactive docs at `/api-docs`.
 | `diffMin` | `0` | Min difficulty (0 = include unrated) |
 | `diffMax` | `99` | Max difficulty |
 | `tags` | — | Repeatable: `?tags=%23wave&tags=%23stream` |
-| `sort` | `popular` | `popular` \| `newest` \| `difficulty_asc` \| `difficulty_desc` \| `bpm` |
+| `sort` | `random` | `random` \| `popular` \| `trending` \| `newest` \| `difficulty_asc` \| `difficulty_desc` \| `bpm` |
 | `page` | `1` | Page number |
 | `limit` | `24` | Per page, max 100 |
 
@@ -128,36 +167,46 @@ npm run dev
 ```
 src/
 ├── app/
-│   ├── page.tsx                    # Home — server component, queries DB directly
-│   ├── maps/page.tsx               # Map browser — client, debounced search
-│   ├── maps/[id]/page.tsx          # Map detail — BPM chart, AI analysis, records
+│   ├── page.tsx                    # Home — Map of the Day, popular maps, activity feed
+│   ├── maps/page.tsx               # Map browser — search, filter, skeleton loading
+│   ├── maps/[id]/page.tsx          # Map detail — chart, records, comments, sharing, similar
 │   ├── rankings/page.tsx           # Global rankings
 │   ├── analyze/page.tsx            # .adofai file analyzer
 │   ├── ai/page.tsx                 # AI Coach chat
+│   ├── bookmarks/page.tsx          # Saved maps
+│   ├── about/page.tsx              # About page
 │   ├── api-docs/page.tsx           # API documentation
-│   ├── admin/import/page.tsx       # Admin import UI (redirects non-admins)
+│   ├── terms/ privacy/             # Legal pages
+│   ├── admin/import/page.tsx       # Admin import UI
 │   ├── login/ register/            # Auth pages
 │   └── api/
-│       ├── maps/                   # GET list + POST create
-│       ├── maps/[id]/              # GET single map
+│       ├── maps/                   # GET list, POST create
+│       ├── maps/[id]/              # GET detail, PATCH edit
+│       ├── maps/[id]/similar/      # GET similar maps
+│       ├── maps/[id]/comments/     # GET/POST comments
+│       ├── maps/[id]/like/         # GET/POST like toggle
+│       ├── bookmarks/              # GET/POST bookmark toggle
 │       ├── rankings/               # GET global rankings
+│       ├── records/                # POST submit record
 │       ├── stats/                  # GET platform counts
 │       ├── ai/analyze/             # POST → Pollinations AI
 │       ├── ai/coach/               # POST → Pollinations AI
-│       ├── auth/login register/    # Auth
-│       └── admin/import/
-│           ├── adofaigg/           # POST — adofai.gg Google Sheets import
-│           └── steam/              # POST — Steam Workshop import
+│       ├── auth/                   # login, register, logout, me
+│       ├── profile/                # GET/PUT user profile
+│       └── admin/import/           # adofaigg, steam
 ├── components/
-│   ├── Navbar.tsx
-│   ├── MapCard.tsx
-│   └── DifficultyBadge.tsx         # Shows "?" for unrated (difficulty=0) maps
+│   ├── Navbar.tsx                  # Nav with auth state
+│   ├── MapCard.tsx                 # Map card with bookmark toggle
+│   ├── DifficultyBadge.tsx         # Difficulty tier badge
+│   ├── Toast.tsx                   # Toast notification system
+│   └── ScrollToTop.tsx             # Floating scroll button
 └── lib/
     ├── db.ts                       # Prisma singleton
     ├── auth.ts                     # JWT sign/verify/cookies
     ├── pollinations.ts             # Pollinations AI client
     ├── utils.ts                    # getDifficultyColor/Label/Tier, formatters
-    └── types.ts                    # Shared TypeScript types
+    ├── types.ts                    # Shared TypeScript types
+    └── mock-data.ts                # Fallback data when DB is unavailable
 ```
 
 ---
@@ -244,7 +293,7 @@ sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
 
 ---
 
-### Restart / Redeploy (existing VPS)
+### Redeploy (existing VPS)
 
 ```bash
 cd /var/www/adofai-verse
@@ -258,14 +307,14 @@ pm2 restart adofai-verse
 
 ---
 
-### First-time setup on a SECOND / NEW VPS
+### One-liner setup for a new VPS
 
-Copy-paste this single block (edit the 4 ALL-CAPS values first):
+Copy-paste this single block (edit the 3 ALL-CAPS values first):
 
 ```bash
 DOMAIN="yourdomain.com"
 DB_PASS="CHANGE_THIS_STRONG_PASSWORD"
-STEAM_KEY=""   # optional, leave blank if you don't have one yet
+STEAM_KEY=""   # optional
 
 # --- do not edit below this line ---
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && \
@@ -306,8 +355,6 @@ pm2 startup | tail -1 | sudo bash
 echo "Done! Visit https://$DOMAIN"
 ```
 
-After deployment, go to `https://yourdomain.com/admin/import` and run the adofai.gg import to populate the database. Log in first with an ADMIN account.
-
 ---
 
 ### PM2 quick reference
@@ -327,14 +374,22 @@ pm2 delete adofai-verse     # remove from PM2
 1. Make sure you have an ADMIN user (set via `npm run db:studio` or direct SQL: `UPDATE "User" SET role='ADMIN' WHERE username='yourname';`)
 2. Log in at `/login`
 3. Go to `/admin/import`
-4. Click **Import Now** next to adofai.gg — imports ~4,700 ranked maps in one request
+4. Click **Import Now** next to adofai.gg — imports ~4,700 ranked maps
 5. (Optional) Enter your Steam API key and click **Import Now** next to Steam Workshop
 
-Imported maps appear immediately in the map browser and REST API.
+---
+
+## Contact
+
+- **General:** [contact@adofai.net](mailto:contact@adofai.net)
+- **Support:** [help@adofai.net](mailto:help@adofai.net)
+- **Legal:** [legal@adofai.net](mailto:legal@adofai.net)
+- **Developer API:** [dev@adofai.net](mailto:dev@adofai.net)
+- **GitHub:** [github.com/3289david/adofai-verse](https://github.com/3289david/adofai-verse)
 
 ---
 
 ## License
 
-MIT — community project, not affiliated with 7th Beat Games.  
+MIT — community project, not affiliated with 7th Beat Games.
 AI features powered by [Pollinations AI](https://pollinations.ai) (free, open).
