@@ -161,7 +161,14 @@ export async function POST(req: NextRequest) {
       pages:   page - 1,
     });
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
+    const msg = e instanceof Error ? e.message : String(e);
+    const hint =
+      msg.includes("Unknown field") || msg.includes("column") || msg.includes("externalId")
+        ? " — Run `npm run db:push` on the server to apply missing schema columns."
+        : msg.includes("ECONNREFUSED") || msg.includes("connect")
+        ? " — Cannot reach the database. Check DATABASE_URL."
+        : "";
+    return NextResponse.json({ error: msg + hint }, { status: 500 });
   }
 }
 
