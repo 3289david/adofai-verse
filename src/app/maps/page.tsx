@@ -27,7 +27,7 @@ export default function MapsPage() {
   const [diffMin, setDiffMin] = useState(0);
   const [diffMax, setDiffMax] = useState(21);
   const [tags,    setTags]    = useState<string[]>([]);
-  const [sort,    setSort]    = useState("popular");
+  const [sort,    setSort]    = useState("random");
   const [showF,   setShowF]   = useState(false);
 
   const LIMIT = 24;
