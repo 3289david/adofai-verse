@@ -1,38 +1,33 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
 const APP_URL   = process.env.NEXT_PUBLIC_APP_URL ?? "https://adofai.net";
 const FROM_NAME = "ADOFAI.NET";
-const FROM_ADDR = process.env.SMTP_FROM ?? `no-reply@adofai.net`;
+const FROM_ADDR = process.env.RESEND_FROM ?? "no-reply@adofai.net";
 
-function getTransporter() {
-  const host = process.env.SMTP_HOST;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-
-  if (!host || !user || !pass) {
-    console.warn("[email] SMTP not configured — emails will not be sent");
+function getClient(): Resend | null {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) {
+    console.warn("[email] RESEND_API_KEY not set — emails will not be sent");
     return null;
   }
-
-  return nodemailer.createTransport({
-    host,
-    port: Number(process.env.SMTP_PORT ?? 587),
-    secure: process.env.SMTP_SECURE === "true",
-    auth: { user, pass },
-  });
+  return new Resend(key);
 }
 
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
-  const transport = getTransporter();
-  if (!transport) return false;
+  const resend = getClient();
+  if (!resend) return false;
 
   try {
-    await transport.sendMail({
+    const { error } = await resend.emails.send({
       from: `${FROM_NAME} <${FROM_ADDR}>`,
       to,
       subject,
       html,
     });
+    if (error) {
+      console.error("[email] Resend error:", error);
+      return false;
+    }
     return true;
   } catch (e) {
     console.error("[email] send failed:", e);
@@ -51,7 +46,7 @@ function emailTemplate(title: string, body: string, buttonText: string, buttonUr
       <table width="480" cellpadding="0" cellspacing="0" style="background:#10101e;border:1px solid #1a1a35;border-radius:16px;padding:40px;">
         <tr><td align="center" style="padding-bottom:24px;">
           <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#ff2244,#ff8800);display:inline-flex;align-items:center;justify-content:center;">
-            <span style="font-size:22px;">🔥</span>
+            <span style="font-size:22px;">&#128293;</span>
           </div>
         </td></tr>
         <tr><td align="center" style="padding-bottom:16px;">
