@@ -149,6 +149,15 @@ export default function AnalyzePage() {
         <p className="text-sm text-soft mt-1">Upload a .adofai file to get full BPM, difficulty, and pattern analysis</p>
       </div>
 
+      {/* Privacy notice */}
+      <div className="mb-5 flex gap-2.5 p-3 rounded-xl text-xs text-soft leading-relaxed" style={{ background: "rgba(0,119,255,0.06)", border: "1px solid rgba(0,119,255,0.15)" }}>
+        <AlertCircle size={13} className="flex-shrink-0 mt-0.5" style={{ color: "#0077ff" }} />
+        <p>
+          <strong className="text-white">Your file never leaves your device.</strong>{" "}
+          Analysis runs entirely in your browser. The .adofai file is read locally and discarded immediately — nothing is uploaded to our servers.
+        </p>
+      </div>
+
       {!result && (
         <div>
           <label htmlFor="file-upload"

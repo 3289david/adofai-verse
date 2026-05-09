@@ -3,10 +3,10 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import {
-  ArrowLeft, Heart, Download, Clock, Music, User, Layers,
+  ArrowLeft, Heart, Clock, Music, User, Layers,
   Brain, BarChart2, Trophy, Loader2, Youtube, ExternalLink, Play,
   RefreshCw, Shield, Globe, CheckCircle, Send, MessageCircle,
-  Share2, Link2, Copy, Check,
+  Share2, Link2, Copy, Check, Flag,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -240,14 +240,15 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
 
         {/* Action buttons — single clean row */}
         <div className="flex flex-wrap items-center gap-2">
-          {map.downloadUrl && (
-            <a href={map.downloadUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-4 py-2 fire-btn text-sm">
-              <Download size={13} />Download
-            </a>
-          )}
-          {map.workshopUrl && (
-            <a href={map.workshopUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm border border-line text-soft hover:border-line-hi hover:text-white transition-colors">
-              <ExternalLink size={13} />Workshop
+          {/* Only Steam Workshop links are shown — direct downloads are not provided */}
+          {(map.workshopUrl || (map.downloadUrl && map.downloadUrl.includes("steamcommunity.com"))) && (
+            <a
+              href={map.workshopUrl || map.downloadUrl!}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 fire-btn text-sm"
+            >
+              <ExternalLink size={13} />Steam Workshop
             </a>
           )}
           <button onClick={toggleLike} disabled={likeLoading}
@@ -284,6 +285,15 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
               </div>
             )}
           </div>
+
+          {/* Report map */}
+          <a
+            href={`mailto:legal@adofai.net?subject=${encodeURIComponent(`Map Report: ${map.title} (ID: ${id})`)}&body=${encodeURIComponent(`I am reporting the following map on ADOFAI.NET:\n\nMap: ${map.title}\nArtist: ${map.artist}\nURL: ${typeof window !== "undefined" ? window.location.href : ""}\n\nReason:\n[ ] Copyright / DMCA issue\n[ ] Inappropriate content\n[ ] Other\n\nDetails:\n`)}`}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm border border-line text-dim hover:border-red-500/40 hover:text-red-400 transition-colors"
+            title="Report this map"
+          >
+            <Flag size={13} />Report
+          </a>
 
           {canEdit && !editing && (
             <button onClick={startEdit} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm border border-line text-dim hover:text-soft hover:border-line-hi transition-colors ml-auto">
@@ -334,8 +344,9 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
             <input type="url" value={editVideo} onChange={e => setEditVideo(e.target.value)} placeholder="https://youtube.com/watch?v=…" className="w-full px-3 py-2 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none" />
           </div>
           <div>
-            <label className="text-xs text-soft mb-1 block">Download URL</label>
-            <input type="url" value={editDown} onChange={e => setEditDown(e.target.value)} className="w-full px-3 py-2 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none" />
+            <label className="text-xs text-soft mb-1 block">Steam Workshop URL</label>
+            <input type="url" value={editDown} onChange={e => setEditDown(e.target.value)} placeholder="https://steamcommunity.com/sharedfiles/filedetails/?id=…" className="w-full px-3 py-2 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none" />
+            <p className="text-[10px] text-dim mt-1">Only Steam Workshop links are accepted.</p>
           </div>
           <div>
             <label className="text-xs text-soft mb-1 block">Description</label>

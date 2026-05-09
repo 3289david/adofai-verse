@@ -41,8 +41,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <p className="font-black text-sm text-white mb-2">
                   <span className="fire-text">ADOFAI</span>.NET
                 </p>
+                <p className="text-xs text-dim leading-relaxed mb-1">
+                  Unofficial fan community platform for A Dance of Fire and Ice.
+                </p>
                 <p className="text-xs text-dim leading-relaxed mb-3">
-                  Community platform for A Dance of Fire and Ice. Not affiliated with 7th Beat Games.
+                  ADOFAI and A Dance of Fire and Ice are trademarks of <strong className="text-soft">7th Beat Games</strong>. This site is not affiliated with, endorsed by, or sponsored by 7th Beat Games.
                 </p>
                 <a href="https://github.com/3289david/adofai-verse" target="_blank" rel="noopener noreferrer" className="text-xs text-soft hover:text-white transition-colors">
                   GitHub
@@ -75,8 +78,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <div>
                 <p className="text-xs font-bold text-white mb-3">Legal &amp; Contact</p>
                 <div className="flex flex-col gap-2 text-xs text-soft">
-                  <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
-                  <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+                  <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+                  <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+                  <Link href="/dmca" className="hover:text-white transition-colors">DMCA / Copyright</Link>
                   <a href="mailto:contact@adofai.net" className="hover:text-white transition-colors">contact@adofai.net</a>
                   <a href="mailto:help@adofai.net" className="hover:text-white transition-colors">help@adofai.net</a>
                   <a href="mailto:legal@adofai.net" className="hover:text-white transition-colors">legal@adofai.net</a>

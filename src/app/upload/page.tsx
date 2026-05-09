@@ -70,7 +70,8 @@ export default function UploadPage() {
   const [artist,       setArtist]       = useState("");
   const [difficulty,   setDifficulty]   = useState(0);
   const [videoUrl,     setVideoUrl]     = useState("");
-  const [downloadUrl,  setDownloadUrl]  = useState("");
+  const [workshopUrl,  setWorkshopUrl]  = useState("");
+  const [tosChecked,   setTosChecked]   = useState(false);
   const [description,  setDescription]  = useState("");
   const [tags,         setTags]         = useState<string[]>([]);
   const [coverFile,    setCoverFile]    = useState<File | null>(null);
@@ -133,6 +134,11 @@ export default function UploadPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim() || !artist.trim()) { setError("Title and artist are required."); return; }
+    if (!tosChecked) { setError("You must agree to the upload terms before submitting."); return; }
+    if (workshopUrl.trim() && !workshopUrl.includes("steamcommunity.com")) {
+      setError("The Steam Workshop URL must be a steamcommunity.com link.");
+      return;
+    }
     setSubmitting(true); setError("");
 
     let coverImage: string | null = null;
@@ -158,7 +164,7 @@ export default function UploadPage() {
           duration:    parsed?.duration ?? 0,
           tileCount:   parsed?.tileCount ?? 0,
           coverImage,
-          downloadUrl: downloadUrl.trim() || null,
+          downloadUrl: workshopUrl.trim() || null,
           videoUrl:    videoUrl.trim()    || null,
           description: description.trim() || null,
           tags,
@@ -210,6 +216,12 @@ export default function UploadPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-black text-white">Upload Map</h1>
         <p className="text-sm text-soft mt-1">Share your ADOFAI level with the community</p>
+      </div>
+
+      {/* Privacy notice */}
+      <div className="mb-6 p-4 rounded-xl bg-card border border-line text-xs text-soft leading-relaxed">
+        <p className="font-bold text-white mb-1">Privacy &amp; File Handling</p>
+        <p>Your <code className="text-fire">.adofai</code> file is parsed <strong className="text-white">entirely in your browser</strong> — it is never uploaded to our servers. Only the map metadata (title, artist, BPM, tile count) is stored in our database. The original file is discarded immediately after parsing.</p>
       </div>
 
       {/* File drop */}
@@ -312,10 +324,11 @@ export default function UploadPage() {
         {/* URLs */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="text-xs text-soft mb-1 block flex items-center gap-1"><FileText size={10} />Download URL (optional)</label>
-            <input type="url" value={downloadUrl} onChange={e => setDownloadUrl(e.target.value)}
-              placeholder="https://…"
+            <label className="text-xs text-soft mb-1 block flex items-center gap-1"><FileText size={10} />Steam Workshop URL (optional)</label>
+            <input type="url" value={workshopUrl} onChange={e => setWorkshopUrl(e.target.value)}
+              placeholder="https://steamcommunity.com/sharedfiles/filedetails/?id=…"
               className="w-full px-3 py-2.5 rounded-xl text-sm outline-none bg-card border border-line focus:border-fire text-white" />
+            <p className="text-[10px] text-dim mt-1">Only Steam Workshop links accepted.</p>
           </div>
           <div>
             <label className="text-xs text-soft mb-1 block flex items-center gap-1"><Music size={10} />YouTube Video URL (optional)</label>
@@ -350,9 +363,33 @@ export default function UploadPage() {
           </div>
         </div>
 
+        {/* Upload Terms */}
+        <div className="p-4 rounded-xl bg-card border border-line space-y-3">
+          <p className="text-xs font-bold text-white">Upload Terms</p>
+          <p className="text-xs text-soft leading-relaxed">
+            By uploading a map, you confirm that you own or have explicit permission to share this content.
+            Uploading copyrighted content (music, artwork, level files) without permission may result in
+            immediate removal. For copyright removal requests, contact{" "}
+            <a href="mailto:legal@adofai.net" className="text-fire hover:underline">legal@adofai.net</a>.
+          </p>
+          <label className="flex items-start gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={tosChecked}
+              onChange={e => setTosChecked(e.target.checked)}
+              className="mt-0.5 w-4 h-4 rounded border-line accent-fire flex-shrink-0"
+            />
+            <span className="text-xs text-soft">
+              I confirm I own or have permission to upload this content, and I agree to the{" "}
+              <a href="/terms" className="text-fire hover:underline">Terms of Service</a>{" "}
+              and <a href="/dmca" className="text-fire hover:underline">DMCA Policy</a>.
+            </span>
+          </label>
+        </div>
+
         {error && <p className="text-sm text-fire bg-fire/8 border border-fire/20 rounded-xl px-4 py-3">{error}</p>}
 
-        <button type="submit" disabled={submitting || !parsed}
+        <button type="submit" disabled={submitting || !parsed || !tosChecked}
           className="w-full py-3 fire-btn text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2">
           <Upload size={15} />{submitting ? "Uploading…" : "Submit Map"}
         </button>
