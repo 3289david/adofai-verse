@@ -17,6 +17,7 @@ import {
   getDifficultyColor, getDifficultyLabel, DIFFICULTY_TAGS,
 } from "@/lib/utils";
 import type { MapData, MapRecord, AIAnalysisResult, AuthUser, CommentData } from "@/lib/types";
+import { TurnstileWidget } from "@/components/TurnstileWidget";
 
 const FLAGS: Record<string, string> = {
   KR: "🇰🇷", JP: "🇯🇵", US: "🇺🇸", CN: "🇨🇳", GB: "🇬🇧",
@@ -90,6 +91,11 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState("");
 
+  // Turnstile gate for edit form
+  const [editTurnstileToken, setEditTurnstileToken] = useState("");
+  const [editTurnstileReady, setEditTurnstileReady] = useState(false);
+  const [showTurnstileGate, setShowTurnstileGate] = useState(false);
+
   const [comments, setComments] = useState<CommentData[]>([]);
   const [commentText, setCommentText] = useState("");
   const [commentLoad, setCommentLoad] = useState(false);
@@ -159,8 +165,22 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
     try { const r = await fetch(`/api/maps/${id}/like`, { method: "POST" }); if (r.ok) { const d = await r.json(); setLiked(d.liked); setLikeCount(d.likeCount); } } finally { setLikeLoading(false); }
   }
 
-  function startEdit() {
+  function openEditGate() {
+    setShowTurnstileGate(true);
+    setEditTurnstileReady(false);
+    setEditTurnstileToken("");
+  }
+
+  function onEditTurnstileToken(token: string) {
+    setEditTurnstileToken(token);
+    setEditTurnstileReady(true);
+    setShowTurnstileGate(false);
+    startEdit(token);
+  }
+
+  function startEdit(token?: string) {
     if (!map) return;
+    if (token) setEditTurnstileToken(token);
     setEditTitle(map.title);
     setEditArtist(map.artist);
     setEditCreatorName(map.creatorName ?? "");
@@ -205,6 +225,7 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
         downloadUrl: editDown.trim() || null,
         tags:        editTags,
         status:      editStatus,
+        turnstile:   editTurnstileToken,
       };
       if (coverImage !== undefined) body.coverImage = coverImage;
       const res = await fetch(`/api/maps/${id}`, {
@@ -343,8 +364,8 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
             <Flag size={13} />Report
           </a>
 
-          {canEdit && !editing && (
-            <button onClick={startEdit} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm border border-line text-dim hover:text-soft hover:border-line-hi transition-colors ml-auto">
+          {canEdit && !editing && !showTurnstileGate && (
+            <button onClick={openEditGate} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm border border-line text-dim hover:text-soft hover:border-line-hi transition-colors ml-auto">
               <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M8 1.5l1.5 1.5L3 9.5H1.5V8L8 1.5z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               Edit
             </button>
@@ -358,6 +379,26 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
           </div>
         )}
       </div>
+
+      {/* ── Turnstile gate: verify before opening edit form ── */}
+      {showTurnstileGate && !editing && (
+        <div className="mb-6 p-5 bg-card border border-line rounded-xl">
+          <p className="text-sm font-bold text-white mb-1 flex items-center gap-2">
+            <Shield size={14} style={{ color: "#cc44ff" }} />
+            Verify to Edit
+          </p>
+          <p className="text-xs text-soft mb-4">Complete the security challenge to open the edit form.</p>
+          <TurnstileWidget
+            onToken={onEditTurnstileToken}
+            onError={() => setShowTurnstileGate(false)}
+            onExpire={() => setShowTurnstileGate(false)}
+          />
+          <button onClick={() => setShowTurnstileGate(false)}
+            className="mt-3 text-xs text-dim hover:text-soft transition-colors">
+            Cancel
+          </button>
+        </div>
+      )}
 
       {/* ── Edit form (comprehensive, tabbed sections) ── */}
       {editing && (

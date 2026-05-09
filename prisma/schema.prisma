@@ -8,24 +8,28 @@ datasource db {
 }
 
 model User {
-  id           String    @id @default(cuid())
-  username     String    @unique
-  email        String    @unique
-  passwordHash String
-  avatar       String?
-  bio          String?
-  country      String?
-  role         UserRole  @default(PLAYER)
-  createdMaps  Map[]     @relation("MapCreator")
-  records      Record[]
-  likes        MapLike[]
-  comments     Comment[]
-  bookmarks    Bookmark[]
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id                 String    @id @default(cuid())
+  username           String    @unique
+  email              String    @unique
+  passwordHash       String
+  avatar             String?
+  bio                String?
+  country            String?
+  role               UserRole  @default(PLAYER)
+  emailVerified      Boolean   @default(false)
+  emailVerifyToken   String?
+  emailVerifyExpiry  DateTime?
+  createdMaps        Map[]     @relation("MapCreator")
+  records            Record[]
+  likes              MapLike[]
+  comments           Comment[]
+  bookmarks          Bookmark[]
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   @@index([username])
   @@index([email])
+  @@index([emailVerifyToken])
 }
 
 enum UserRole {

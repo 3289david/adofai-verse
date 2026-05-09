@@ -1,20 +1,57 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Flame, Eye, EyeOff } from "lucide-react";
+import { Flame, Eye, EyeOff, Shield, Loader2 } from "lucide-react";
+import { TurnstileWidget } from "@/components/TurnstileWidget";
+import { solvePoW } from "@/lib/pow-client";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPass, setShowPass] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [email,         setEmail]         = useState("");
+  const [password,      setPassword]      = useState("");
+  const [showPass,      setShowPass]      = useState(false);
+  const [loading,       setLoading]       = useState(false);
+  const [error,         setError]         = useState("");
+
+  // Anti-spam state
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [powToken,       setPowToken]       = useState("");
+  const [powNonce,       setPowNonce]       = useState("");
+  const [powReady,       setPowReady]       = useState(false);
+  const [powStatus,      setPowStatus]      = useState<"idle" | "solving" | "ready">("idle");
+  const formLoadedAt = useRef(Date.now());
+  const powAbort     = useRef<AbortController | null>(null);
+
+  // Fetch PoW challenge and solve it in the background on mount
+  const startPoW = useCallback(async () => {
+    setPowStatus("solving");
+    setPowReady(false);
+    try {
+      const res  = await fetch("/api/auth/pow");
+      const data = await res.json() as { challenge: string; difficulty: number; token: string };
+      if (!res.ok) return;
+
+      powAbort.current = new AbortController();
+      const nonce = await solvePoW(data.challenge, data.difficulty, powAbort.current.signal);
+      setPowToken(data.token);
+      setPowNonce(nonce);
+      setPowReady(true);
+      setPowStatus("ready");
+    } catch {
+      setPowStatus("idle");
+    }
+  }, []);
+
+  useEffect(() => {
+    startPoW();
+    return () => powAbort.current?.abort();
+  }, [startPoW]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!powReady) { setError("Security check still running. Please wait a moment."); return; }
+    if (!turnstileToken) { setError("Please complete the human verification challenge."); return; }
+
     setLoading(true);
     setError("");
 
@@ -22,12 +59,23 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+          turnstile:    turnstileToken,
+          powToken,
+          powNonce,
+          honeypot:     (document.getElementById("hp-website") as HTMLInputElement)?.value ?? "",
+          formLoadedAt: formLoadedAt.current,
+        }),
       });
 
       if (!res.ok) {
         const data = await res.json();
         setError(data.error ?? "Login failed");
+        // Refresh PoW after failure
+        setPowReady(false);
+        startPoW();
         return;
       }
 
@@ -76,6 +124,17 @@ export default function LoginPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Honeypot — hidden from real users, bots fill it */}
+          <input
+            id="hp-website"
+            type="text"
+            name="website"
+            autoComplete="off"
+            tabIndex={-1}
+            aria-hidden="true"
+            style={{ position: "absolute", left: "-9999px", width: "1px", height: "1px", opacity: 0 }}
+          />
+
           <div>
             <label className="block text-xs font-medium mb-1.5" style={{ color: "#7777aa" }}>
               Email
@@ -85,11 +144,13 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="email"
               className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
               style={inputStyle}
               placeholder="you@example.com"
             />
           </div>
+
           <div>
             <label className="block text-xs font-medium mb-1.5" style={{ color: "#7777aa" }}>
               Password
@@ -100,6 +161,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                autoComplete="current-password"
                 className="w-full px-3 py-2.5 pr-10 rounded-xl text-sm outline-none"
                 style={inputStyle}
                 placeholder="••••••••"
@@ -115,15 +177,35 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {/* Cloudflare Turnstile */}
+          <TurnstileWidget
+            onToken={setTurnstileToken}
+            onError={() => setError("Verification widget error. Please reload.")}
+            onExpire={() => setTurnstileToken("")}
+            className="mt-1"
+          />
+
+          {/* PoW status indicator */}
+          {powStatus === "solving" && (
+            <div className="flex items-center gap-2 text-xs py-1" style={{ color: "#7777aa" }}>
+              <Loader2 size={12} className="animate-spin flex-shrink-0" />
+              Running security check…
+            </div>
+          )}
+          {powStatus === "ready" && (
+            <div className="flex items-center gap-2 text-xs py-1" style={{ color: "#44dd88" }}>
+              <Shield size={12} className="flex-shrink-0" />
+              Security check passed
+            </div>
+          )}
+
           <button
             type="submit"
-            disabled={loading}
-            className="w-full py-3 rounded-xl font-bold text-sm transition-all disabled:opacity-60"
-            style={{
-              background: "linear-gradient(135deg, #ff2244, #ff8800)",
-              color: "white",
-            }}
+            disabled={loading || !powReady || !turnstileToken}
+            className="w-full py-3 rounded-xl font-bold text-sm transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+            style={{ background: "linear-gradient(135deg, #ff2244, #ff8800)", color: "white" }}
           >
+            {loading && <Loader2 size={14} className="animate-spin" />}
             {loading ? "Signing in…" : "Sign In"}
           </button>
         </form>

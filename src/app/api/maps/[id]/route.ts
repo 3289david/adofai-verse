@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { verifyTurnstile } from "@/lib/turnstile";
+import { rateLimit, getIp } from "@/lib/rate-limit";
 
 export async function GET(
   _req: NextRequest,
@@ -35,6 +37,13 @@ export async function PATCH(
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const ip = getIp(req);
+
+  // Rate limit: 10 edits per user per minute
+  if (!rateLimit(`map-edit:${user.id}`, 10, 60_000)) {
+    return NextResponse.json({ error: "Too many edit requests. Please slow down." }, { status: 429 });
+  }
+
   const { id } = await params;
   try {
     const map = await db.map.findUnique({ where: { id }, select: { creatorId: true } });
@@ -44,11 +53,22 @@ export async function PATCH(
     const isAdmin = user.role === "ADMIN" || user.role === "MODERATOR";
     if (!isOwner && !isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+    const body = await req.json();
     const {
       title, artist, difficulty, bpmMin, bpmMax,
       duration, tileCount, creatorName,
       description, videoUrl, downloadUrl, tags, coverImage, status,
-    } = await req.json();
+      turnstile,
+    } = body;
+
+    // Turnstile verification for map edits
+    const turnstileOk = await verifyTurnstile(turnstile as string | undefined, ip);
+    if (!turnstileOk) {
+      return NextResponse.json(
+        { error: "Human verification failed. Please complete the Turnstile challenge." },
+        { status: 400 }
+      );
+    }
 
     const updated = await db.map.update({
       where: { id },
