@@ -38,8 +38,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    // Timing check
-    if (formLoadedAt && Date.now() - formLoadedAt < 1000) {
+    // Timing check — 300ms is enough to catch pure-script bots; real users always take longer
+    if (formLoadedAt && Date.now() - formLoadedAt < 300) {
       return NextResponse.json(
         { error: "Form submitted too quickly. Please try again." },
         { status: 400 }
@@ -63,16 +63,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const user = await db.user.findUnique({ where: { email } });
+    // Use explicit select to avoid querying columns that may not exist yet (emailVerified etc.)
+    // if db:push hasn't been run on the server after a schema change.
+    const user = await db.user.findUnique({
+      where: { email },
+      select: { id: true, username: true, email: true, passwordHash: true, role: true },
+    });
     if (!user) {
-      // Constant-time fake compare to prevent timing attacks on email enumeration
       await bcrypt.compare(password, "$2a$12$invalidhashforsecurityXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
-      // Per-user rate limit on failed attempts
       if (!rateLimit(`login:user:${user.id}`, 5, 15 * 60_000, 60 * 60_000)) {
         return NextResponse.json(
           { error: "Account temporarily locked due to too many failed attempts." },
@@ -94,13 +97,13 @@ export async function POST(req: NextRequest) {
       username: user.username,
       email: user.email,
       role: user.role,
-      emailVerified: user.emailVerified,
     });
     return setTokenCookie(response, token);
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.errors[0].message }, { status: 400 });
     }
-    return NextResponse.json({ error: "Login failed" }, { status: 500 });
+    console.error("[login]", err);
+    return NextResponse.json({ error: "Login failed. Please try again." }, { status: 500 });
   }
 }

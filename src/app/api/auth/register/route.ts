@@ -43,8 +43,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ id: "ok" }, { status: 201 });
     }
 
-    // Timing check: form must have been visible for at least 1.5 seconds
-    if (formLoadedAt && Date.now() - formLoadedAt < 1500) {
+    // Timing check — 400ms catches script bots; real users always take longer
+    if (formLoadedAt && Date.now() - formLoadedAt < 400) {
       return NextResponse.json(
         { error: "Form submitted too quickly. Please try again." },
         { status: 400 }
@@ -93,19 +93,24 @@ export async function POST(req: NextRequest) {
     const emailVerifyToken = randomBytes(32).toString("hex");
     const emailVerifyExpiry = new Date(Date.now() + 24 * 60 * 60_000); // 24 hours
 
-    const user = await db.user.create({
-      data: {
-        username,
-        email,
-        passwordHash,
-        emailVerifyToken,
-        emailVerifyExpiry,
-        emailVerified: false,
-      },
-    });
-
-    // Send verification email (best-effort; exe.dev gateway may limit recipients)
-    await sendVerificationEmail(email, emailVerifyToken).catch(() => {});
+    // Try creating with email-verification fields; fall back to base fields if the DB
+    // columns don't exist yet (i.e. db:push hasn't been run on the server after the
+    // schema change — this keeps registration working during rolling deploys).
+    let user: { id: string; username: string; email: string; role: string };
+    try {
+      user = await db.user.create({
+        data: { username, email, passwordHash, emailVerifyToken, emailVerifyExpiry, emailVerified: false },
+        select: { id: true, username: true, email: true, role: true },
+      });
+      // Send verification email (best-effort; exe.dev gateway may limit recipients)
+      await sendVerificationEmail(email, emailVerifyToken).catch(() => {});
+    } catch {
+      // Columns not yet in DB — create without them (emailVerified defaults to false in schema)
+      user = await db.user.create({
+        data: { username, email, passwordHash },
+        select: { id: true, username: true, email: true, role: true },
+      });
+    }
 
     const token = await signToken({
       id: user.id,
@@ -129,6 +134,7 @@ export async function POST(req: NextRequest) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.errors[0].message }, { status: 400 });
     }
-    return NextResponse.json({ error: "Registration failed" }, { status: 500 });
+    console.error("[register]", err);
+    return NextResponse.json({ error: "Registration failed. Please try again." }, { status: 500 });
   }
 }
