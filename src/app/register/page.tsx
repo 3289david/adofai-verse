@@ -54,14 +54,14 @@ export default function RegisterPage() {
 
     // Client-side gates — checked before going into loading state
     if (!turnstileToken) {
-      setError("Please complete the human verification challenge below.");
+      setError("Please complete the verification check first.");
       return;
     }
     if (!powReady) {
       if (powStatus === "solving") {
-        setError("Security check still running — please wait a moment, then try again.");
+        setError("Security check still running — please wait a moment.");
       } else {
-        setError("Security check failed to start. Please reload the page.");
+        setError("Security check failed. Please reload the page.");
         startPoW();
       }
       return;
@@ -248,32 +248,18 @@ export default function RegisterPage() {
               onExpire={() => { setTurnstileToken(""); setError("Verification expired — please complete the challenge again."); }}
             />
 
-            {/* Security status rows */}
-            <div className="space-y-1">
-              {turnstileToken ? (
-                <div className="flex items-center gap-2 text-xs" style={{ color: "#44dd88" }}>
-                  <Shield size={11} className="flex-shrink-0" />
-                  Human verification passed
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-xs" style={{ color: "#ff8800" }}>
-                  <Shield size={11} className="flex-shrink-0" />
-                  Complete the verification above to continue
-                </div>
-              )}
-              {powStatus === "solving" && (
-                <div className="flex items-center gap-2 text-xs" style={{ color: "#7777aa" }}>
-                  <Loader2 size={11} className="animate-spin flex-shrink-0" />
-                  Running security check…
-                </div>
-              )}
-              {powStatus === "ready" && (
-                <div className="flex items-center gap-2 text-xs" style={{ color: "#44dd88" }}>
-                  <Shield size={11} className="flex-shrink-0" />
-                  Security check passed
-                </div>
-              )}
-            </div>
+            {/* Verification status */}
+            {turnstileToken && powStatus === "ready" ? (
+              <div className="flex items-center gap-2 text-xs" style={{ color: "#44dd88" }}>
+                <Shield size={11} className="flex-shrink-0" />
+                Verified — ready to create account
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-xs" style={{ color: "#7777aa" }}>
+                {(!turnstileToken || powStatus === "solving") && <Loader2 size={11} className="animate-spin flex-shrink-0" />}
+                {!turnstileToken ? "Waiting for verification…" : powStatus === "solving" ? "Finalizing security check…" : ""}
+              </div>
+            )}
 
             <button type="submit"
               disabled={loading}
