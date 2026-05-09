@@ -24,8 +24,8 @@ const schema = z.object({
 export async function POST(req: NextRequest) {
   const ip = getIp(req);
 
-  // Rate limit: 3 registrations per IP per 15 minutes, blocked for 1 hour on abuse
-  if (!rateLimit(`register:${ip}`, 3, 15 * 60_000, 60 * 60_000)) {
+  // Rate limit: 2 registrations per IP per 30 minutes, blocked for 24 hours on abuse
+  if (!rateLimit(`register:${ip}`, 2, 30 * 60_000, 24 * 60 * 60_000)) {
     return NextResponse.json(
       { error: "Too many registration attempts. Please try again later." },
       { status: 429 }
@@ -43,8 +43,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ id: "ok" }, { status: 201 });
     }
 
-    // Timing check — 400ms catches script bots; real users always take longer
-    if (formLoadedAt && Date.now() - formLoadedAt < 400) {
+    // Timing check — form must have been open at least 1.5 seconds
+    if (formLoadedAt && Date.now() - formLoadedAt < 1500) {
       return NextResponse.json(
         { error: "Form submitted too quickly. Please try again." },
         { status: 400 }
@@ -60,10 +60,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Proof-of-Work verification (bonus layer — only enforced when token is present)
-    if (powToken && powNonce && !verifyPoWSolution(powToken, powNonce)) {
+    // Proof-of-Work — required
+    if (!verifyPoWSolution(powToken, powNonce)) {
       return NextResponse.json(
-        { error: "Security check failed. Please reload and try again." },
+        { error: "Security check failed. Please wait for the check to complete and try again." },
         { status: 400 }
       );
     }

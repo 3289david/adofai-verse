@@ -21,8 +21,8 @@ const schema = z.object({
 export async function POST(req: NextRequest) {
   const ip = getIp(req);
 
-  // Rate limit: 5 login attempts per IP per 5 minutes, 30-minute block after
-  if (!rateLimit(`login:${ip}`, 5, 5 * 60_000, 30 * 60_000)) {
+  // Rate limit: 3 login attempts per IP per 5 minutes, 1-hour block after
+  if (!rateLimit(`login:${ip}`, 3, 5 * 60_000, 60 * 60_000)) {
     return NextResponse.json(
       { error: "Too many login attempts. Please wait 30 minutes before trying again." },
       { status: 429 }
@@ -38,15 +38,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    // Timing check — 300ms is enough to catch pure-script bots; real users always take longer
-    if (formLoadedAt && Date.now() - formLoadedAt < 300) {
+    // Timing check — form must have been open at least 1 second
+    if (formLoadedAt && Date.now() - formLoadedAt < 1000) {
       return NextResponse.json(
         { error: "Form submitted too quickly. Please try again." },
         { status: 400 }
       );
     }
 
-    // Turnstile verification
+    // Cloudflare Turnstile — required
     const turnstileOk = await verifyTurnstile(turnstile, ip);
     if (!turnstileOk) {
       return NextResponse.json(
@@ -55,10 +55,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Proof-of-Work verification (optional bonus layer — required only when provided)
-    if (powToken && powNonce && !verifyPoWSolution(powToken, powNonce)) {
+    // Proof-of-Work — required
+    if (!verifyPoWSolution(powToken, powNonce)) {
       return NextResponse.json(
-        { error: "Security check failed. Please reload and try again." },
+        { error: "Security check failed. Please wait for the check to complete and try again." },
         { status: 400 }
       );
     }
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
 
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
-      if (!rateLimit(`login:user:${user.id}`, 5, 15 * 60_000, 60 * 60_000)) {
+      if (!rateLimit(`login:user:${user.id}`, 3, 10 * 60_000, 2 * 60 * 60_000)) {
         return NextResponse.json(
           { error: "Account temporarily locked due to too many failed attempts." },
           { status: 429 }
