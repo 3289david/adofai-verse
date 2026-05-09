@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import Link from "next/link";
-import { Flame, Eye, EyeOff, Shield, Loader2 } from "lucide-react";
+import { Flame, Eye, EyeOff, Shield, Loader2, Mail } from "lucide-react";
 import { TurnstileWidget } from "@/components/TurnstileWidget";
 
 export default function LoginPage() {
@@ -15,6 +15,11 @@ export default function LoginPage() {
   const [turnstileToken, setTurnstileToken] = useState("");
   const formLoadedAt = useRef(Date.now());
 
+  const [needsVerify,   setNeedsVerify]   = useState(false);
+  const [verifyEmail,   setVerifyEmail]   = useState("");
+  const [resending,     setResending]     = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
@@ -25,6 +30,7 @@ export default function LoginPage() {
 
     setLoading(true);
     setError("");
+    setNeedsVerify(false);
 
     try {
       const res = await fetch("/api/auth/login", {
@@ -39,9 +45,16 @@ export default function LoginPage() {
         }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const data = await res.json();
-        setError(data.error ?? "Login failed");
+        if (data.error === "EMAIL_NOT_VERIFIED") {
+          setNeedsVerify(true);
+          setVerifyEmail(data.email ?? email);
+          setResendSuccess(false);
+        } else {
+          setError(data.error ?? "Login failed");
+        }
         return;
       }
 
@@ -53,11 +66,65 @@ export default function LoginPage() {
     }
   }
 
+  async function resendVerification() {
+    setResending(true);
+    try {
+      await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: verifyEmail }),
+      });
+      setResendSuccess(true);
+    } catch {
+      setError("Failed to resend. Please try again.");
+    } finally {
+      setResending(false);
+    }
+  }
+
   const inputStyle = {
     background: "rgba(7,7,15,0.8)",
     border: "1px solid rgba(26,26,53,0.8)",
     color: "#f0f0ff",
   };
+
+  if (needsVerify) {
+    return (
+      <div className="flex min-h-[calc(100vh-56px)] items-center justify-center px-4 py-12">
+        <div className="w-full max-w-sm p-8 rounded-2xl text-center"
+          style={{ background: "rgba(16,16,30,0.9)", border: "1px solid rgba(26,26,53,0.8)" }}>
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4"
+            style={{ background: "linear-gradient(135deg,#ff8800,#ff2244)" }}>
+            <Mail size={22} color="white" />
+          </div>
+          <h2 className="text-xl font-black mb-2" style={{ color: "#f0f0ff" }}>Email Not Verified</h2>
+          <p className="text-sm mb-6" style={{ color: "#7777aa" }}>
+            Please verify your email <strong style={{ color: "#f0f0ff" }}>{verifyEmail}</strong> before signing in.
+            Check your inbox for the verification link.
+          </p>
+
+          {resendSuccess ? (
+            <div className="flex items-center justify-center gap-2 text-sm mb-4" style={{ color: "#44dd88" }}>
+              <Shield size={14} />
+              Verification email sent!
+            </div>
+          ) : (
+            <button onClick={resendVerification} disabled={resending}
+              className="w-full py-3 rounded-xl font-bold text-sm transition-all disabled:opacity-60 flex items-center justify-center gap-2 mb-4"
+              style={{ background: "linear-gradient(135deg, #ff2244, #ff8800)", color: "white" }}>
+              {resending && <Loader2 size={14} className="animate-spin" />}
+              {resending ? "Sending…" : "Resend Verification Email"}
+            </button>
+          )}
+
+          <button onClick={() => { setNeedsVerify(false); setError(""); }}
+            className="text-sm hover:underline" style={{ color: "#ff8800" }}>
+            Back to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-56px)] items-center justify-center px-4 py-12">

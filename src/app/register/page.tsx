@@ -151,7 +151,7 @@ export default function RegisterPage() {
             <div>
               <label className="block text-xs font-medium mb-1.5" style={{ color: "#7777aa" }}>Username</label>
               <input type="text" value={username} onChange={(e) => setUsername(e.target.value)}
-                required pattern="^[a-zA-Z0-9_-]+$" minLength={3} maxLength={20}
+                required pattern="^[-a-zA-Z0-9_]+$" minLength={3} maxLength={20}
                 autoComplete="username"
                 className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={inputStyle}
                 placeholder="CoolPlayer_123" />

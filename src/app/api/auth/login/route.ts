@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { signToken, setTokenCookie } from "@/lib/auth";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { rateLimit, getIp } from "@/lib/rate-limit";
+import { sendVerificationEmail } from "@/lib/email";
 
 const schema = z.object({
   email:       z.string().email(),
@@ -51,11 +52,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Use explicit select to avoid querying columns that may not exist yet (emailVerified etc.)
-    // if db:push hasn't been run on the server after a schema change.
     const user = await db.user.findUnique({
       where: { email },
-      select: { id: true, username: true, email: true, passwordHash: true, role: true },
+      select: {
+        id: true, username: true, email: true, passwordHash: true, role: true,
+        emailVerified: true, emailVerifyToken: true, emailVerifyExpiry: true,
+      },
     });
     if (!user) {
       await bcrypt.compare(password, "$2a$12$invalidhashforsecurityXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
@@ -71,6 +73,13 @@ export async function POST(req: NextRequest) {
         );
       }
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    }
+
+    if (!user.emailVerified) {
+      return NextResponse.json(
+        { error: "EMAIL_NOT_VERIFIED", email: user.email },
+        { status: 403 }
+      );
     }
 
     const token = await signToken({
