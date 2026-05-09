@@ -46,7 +46,8 @@ export async function PATCH(
 
     const {
       title, artist, difficulty, bpmMin, bpmMax,
-      description, videoUrl, downloadUrl, tags, coverImage,
+      duration, tileCount, creatorName,
+      description, videoUrl, downloadUrl, tags, coverImage, status,
     } = await req.json();
 
     const updated = await db.map.update({
@@ -57,11 +58,16 @@ export async function PATCH(
         ...(difficulty  !== undefined && { difficulty:  Number(difficulty) }),
         ...(bpmMin      !== undefined && { bpmMin:      Number(bpmMin) }),
         ...(bpmMax      !== undefined && { bpmMax:      Number(bpmMax) }),
+        ...(duration    !== undefined && { duration:    Math.max(0, Number(duration)) }),
+        ...(tileCount   !== undefined && { tileCount:   Math.max(0, Number(tileCount)) }),
+        ...(creatorName !== undefined && { creatorName: creatorName ? String(creatorName).slice(0, 200) : null }),
         ...(description !== undefined && { description: description ? String(description).slice(0, 1000) : null }),
         ...(videoUrl    !== undefined && { videoUrl:    videoUrl || null }),
         ...(downloadUrl !== undefined && { downloadUrl: downloadUrl || null }),
         ...(tags        !== undefined && { tags }),
         ...(coverImage  !== undefined && { coverImage:  coverImage || null }),
+        // status can only be changed by admin/moderator
+        ...(status !== undefined && isAdmin && { status }),
       },
       include: {
         creator: { select: { id: true, username: true, avatar: true } },

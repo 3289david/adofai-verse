@@ -6,7 +6,7 @@ import {
   ArrowLeft, Heart, Clock, Music, User, Layers,
   Brain, BarChart2, Trophy, Loader2, Youtube, ExternalLink, Play,
   RefreshCw, Shield, Globe, CheckCircle, Send, MessageCircle,
-  Share2, Link2, Copy, Check, Flag,
+  Share2, Link2, Copy, Check, Flag, Tag, Image, ChevronDown,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -14,7 +14,7 @@ import {
 import { DifficultyBadge } from "@/components/DifficultyBadge";
 import {
   formatDuration, formatBpm, formatNumber,
-  getDifficultyColor, getDifficultyLabel,
+  getDifficultyColor, getDifficultyLabel, DIFFICULTY_TAGS,
 } from "@/lib/utils";
 import type { MapData, MapRecord, AIAnalysisResult, AuthUser, CommentData } from "@/lib/types";
 
@@ -73,12 +73,20 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editArtist, setEditArtist] = useState("");
+  const [editCreatorName, setEditCreatorName] = useState("");
   const [editDiff, setEditDiff] = useState(0);
   const [editBpmMin, setEditBpmMin] = useState(0);
   const [editBpmMax, setEditBpmMax] = useState(0);
+  const [editDuration, setEditDuration] = useState(0);
+  const [editTileCount, setEditTileCount] = useState(0);
   const [editDesc, setEditDesc] = useState("");
   const [editVideo, setEditVideo] = useState("");
   const [editDown, setEditDown] = useState("");
+  const [editTags, setEditTags] = useState<string[]>([]);
+  const [editStatus, setEditStatus] = useState<string>("");
+  const [editCoverFile, setEditCoverFile] = useState<File | null>(null);
+  const [editCoverPreview, setEditCoverPreview] = useState("");
+  const [editSection, setEditSection] = useState<"basic" | "stats" | "media" | "tags" | "admin">("basic");
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState("");
 
@@ -153,17 +161,57 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
 
   function startEdit() {
     if (!map) return;
-    setEditTitle(map.title); setEditArtist(map.artist); setEditDiff(map.difficulty);
-    setEditBpmMin(map.bpmMin); setEditBpmMax(map.bpmMax); setEditDesc(map.description ?? "");
-    setEditVideo(map.videoUrl ?? ""); setEditDown(map.downloadUrl ?? "");
-    setEditing(true); setEditError("");
+    setEditTitle(map.title);
+    setEditArtist(map.artist);
+    setEditCreatorName(map.creatorName ?? "");
+    setEditDiff(map.difficulty);
+    setEditBpmMin(map.bpmMin);
+    setEditBpmMax(map.bpmMax);
+    setEditDuration(map.duration);
+    setEditTileCount(map.tileCount);
+    setEditDesc(map.description ?? "");
+    setEditVideo(map.videoUrl ?? "");
+    setEditDown(map.downloadUrl ?? "");
+    setEditTags(map.tags ?? []);
+    setEditStatus(map.status);
+    setEditCoverFile(null);
+    setEditCoverPreview(map.coverImage ?? "");
+    setEditSection("basic");
+    setEditing(true);
+    setEditError("");
   }
 
   async function saveEdit(e: React.FormEvent) {
     e.preventDefault(); setEditSaving(true); setEditError("");
     try {
-      const res = await fetch(`/api/maps/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: editTitle.trim(), artist: editArtist.trim(), difficulty: Number(editDiff), bpmMin: Number(editBpmMin), bpmMax: Number(editBpmMax), description: editDesc.trim() || null, videoUrl: editVideo.trim() || null, downloadUrl: editDown.trim() || null }) });
+      let coverImage: string | undefined = undefined;
+      if (editCoverFile) {
+        const fd = new FormData();
+        fd.append("file", editCoverFile);
+        const up = await fetch("/api/upload", { method: "POST", body: fd });
+        if (up.ok) { const d = await up.json(); coverImage = d.url; }
+      }
+      const body: Record<string, unknown> = {
+        title:       editTitle.trim(),
+        artist:      editArtist.trim(),
+        creatorName: editCreatorName.trim() || null,
+        difficulty:  Number(editDiff),
+        bpmMin:      Number(editBpmMin),
+        bpmMax:      Number(editBpmMax),
+        duration:    Number(editDuration),
+        tileCount:   Number(editTileCount),
+        description: editDesc.trim() || null,
+        videoUrl:    editVideo.trim() || null,
+        downloadUrl: editDown.trim() || null,
+        tags:        editTags,
+        status:      editStatus,
+      };
+      if (coverImage !== undefined) body.coverImage = coverImage;
+      const res = await fetch(`/api/maps/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
       if (!res.ok) { const d = await res.json(); setEditError(d.error ?? "Save failed."); return; }
       setMap(await res.json()); setEditing(false);
     } catch { setEditError("Network error."); } finally { setEditSaving(false); }
@@ -311,51 +359,209 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
         )}
       </div>
 
-      {/* ── Edit form (inline, no tab) ── */}
+      {/* ── Edit form (comprehensive, tabbed sections) ── */}
       {editing && (
-        <form onSubmit={saveEdit} className="mb-6 bg-card border border-line rounded-xl p-5 space-y-3">
-          <p className="text-sm font-bold text-white">Edit Map Info</p>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-soft mb-1 block">Title</label>
-              <input value={editTitle} onChange={e => setEditTitle(e.target.value)} required maxLength={200} className="w-full px-3 py-2 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none" />
-            </div>
-            <div>
-              <label className="text-xs text-soft mb-1 block">Artist</label>
-              <input value={editArtist} onChange={e => setEditArtist(e.target.value)} required maxLength={200} className="w-full px-3 py-2 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none" />
-            </div>
+        <form onSubmit={saveEdit} className="mb-6 bg-card border border-line rounded-xl overflow-hidden">
+          {/* Section tabs */}
+          <div className="flex border-b border-line overflow-x-auto">
+            {([
+              { key: "basic",  label: "Basic Info" },
+              { key: "stats",  label: "Stats" },
+              { key: "media",  label: "Media" },
+              { key: "tags",   label: "Tags" },
+              ...(currentUser?.role === "ADMIN" || currentUser?.role === "MODERATOR" ? [{ key: "admin", label: "⚙ Admin" }] : []),
+            ] as { key: typeof editSection; label: string }[]).map(s => (
+              <button key={s.key} type="button" onClick={() => setEditSection(s.key)}
+                className={`flex-shrink-0 px-4 py-3 text-xs font-bold transition-colors border-b-2 ${
+                  editSection === s.key ? "border-fire text-fire" : "border-transparent text-soft hover:text-white"
+                }`}>
+                {s.label}
+              </button>
+            ))}
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="text-xs text-soft mb-1 block">Difficulty</label>
-              <input type="number" min={0} max={21} step={0.1} value={editDiff} onChange={e => setEditDiff(+e.target.value)} className="w-full px-3 py-2 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none" />
+
+          <div className="p-5 space-y-4">
+            {/* BASIC INFO */}
+            {editSection === "basic" && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-soft mb-1 block">Title *</label>
+                    <input value={editTitle} onChange={e => setEditTitle(e.target.value)} required maxLength={200}
+                      className="w-full px-3 py-2 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-soft mb-1 block">Artist *</label>
+                    <input value={editArtist} onChange={e => setEditArtist(e.target.value)} required maxLength={200}
+                      className="w-full px-3 py-2 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-soft mb-1 block flex items-center gap-1"><User size={10} />Display Creator Name</label>
+                  <input value={editCreatorName} onChange={e => setEditCreatorName(e.target.value)} maxLength={200}
+                    placeholder={map.creator.username}
+                    className="w-full px-3 py-2 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none" />
+                  <p className="text-[10px] text-dim mt-1">Overrides the username shown on the map. Leave blank to use account username.</p>
+                </div>
+                <div>
+                  <label className="text-xs text-soft mb-1 block">Description</label>
+                  <textarea rows={4} value={editDesc} onChange={e => setEditDesc(e.target.value)} maxLength={1000}
+                    placeholder="Describe your level, patterns, difficulty notes…"
+                    className="w-full px-3 py-2 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none resize-none" />
+                  <p className="text-[10px] text-dim mt-1">{editDesc.length}/1000</p>
+                </div>
+              </>
+            )}
+
+            {/* STATS */}
+            {editSection === "stats" && (
+              <>
+                <div>
+                  <label className="text-xs text-soft mb-2 block">
+                    Difficulty — <span className="font-bold" style={{ color: getDifficultyColor(editDiff) }}>{editDiff === 0 ? "Unrated" : `${editDiff} (${getDifficultyLabel(editDiff)})`}</span>
+                  </label>
+                  <input type="range" min="0" max="21" step="0.5" value={editDiff}
+                    onChange={e => setEditDiff(+e.target.value)} className="w-full accent-fire" />
+                  <div className="flex justify-between text-[10px] text-dim mt-1">
+                    <span>Unrated</span><span>Beginner</span><span>Medium</span><span>Hard</span><span>Ultra</span>
+                  </div>
+                  <input type="number" min={0} max={21} step={0.1} value={editDiff}
+                    onChange={e => setEditDiff(+e.target.value)}
+                    className="mt-2 w-24 px-3 py-1.5 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none text-center" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-soft mb-1 block flex items-center gap-1"><Music size={10} />BPM Min</label>
+                    <input type="number" min={0} value={editBpmMin} onChange={e => setEditBpmMin(+e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-soft mb-1 block flex items-center gap-1"><Music size={10} />BPM Max</label>
+                    <input type="number" min={0} value={editBpmMax} onChange={e => setEditBpmMax(+e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-soft mb-1 block flex items-center gap-1"><Clock size={10} />Duration (seconds)</label>
+                    <input type="number" min={0} value={editDuration} onChange={e => setEditDuration(+e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none" />
+                    {editDuration > 0 && <p className="text-[10px] text-dim mt-1">= {formatDuration(editDuration)}</p>}
+                  </div>
+                  <div>
+                    <label className="text-xs text-soft mb-1 block flex items-center gap-1"><Layers size={10} />Tile Count</label>
+                    <input type="number" min={0} value={editTileCount} onChange={e => setEditTileCount(+e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none" />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* MEDIA */}
+            {editSection === "media" && (
+              <>
+                <div>
+                  <label className="text-xs text-soft mb-2 block flex items-center gap-1"><Image size={10} />Cover Image</label>
+                  <div className="flex items-center gap-4">
+                    {(editCoverPreview) && (
+                      <img src={editCoverPreview} alt="" className="w-16 h-16 rounded-xl object-cover border border-line flex-shrink-0" />
+                    )}
+                    <div className="flex-1">
+                      <label htmlFor="edit-cover-upload" className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 border border-line rounded-xl text-xs text-soft hover:border-line-hi transition-colors">
+                        <Image size={12} />Choose new cover
+                      </label>
+                      <input id="edit-cover-upload" type="file" accept="image/*" className="hidden"
+                        onChange={e => {
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          setEditCoverFile(f);
+                          setEditCoverPreview(URL.createObjectURL(f));
+                        }} />
+                      {editCoverFile && <p className="text-[10px] text-easy mt-1">{editCoverFile.name} ready to upload</p>}
+                      {editCoverPreview && !editCoverFile && (
+                        <button type="button" onClick={() => { setEditCoverPreview(""); setEditCoverFile(null); }}
+                          className="block text-[10px] text-dim hover:text-fire mt-1 transition-colors">Remove cover</button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-soft mb-1 block flex items-center gap-1"><Youtube size={10} />YouTube Video URL</label>
+                  <input type="url" value={editVideo} onChange={e => setEditVideo(e.target.value)}
+                    placeholder="https://youtube.com/watch?v=…"
+                    className="w-full px-3 py-2 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none" />
+                </div>
+                <div>
+                  <label className="text-xs text-soft mb-1 block flex items-center gap-1"><ExternalLink size={10} />Steam Workshop URL</label>
+                  <input type="url" value={editDown} onChange={e => setEditDown(e.target.value)}
+                    placeholder="https://steamcommunity.com/sharedfiles/filedetails/?id=…"
+                    className="w-full px-3 py-2 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none" />
+                  <p className="text-[10px] text-dim mt-1">Only Steam Workshop links are shown as download options.</p>
+                </div>
+              </>
+            )}
+
+            {/* TAGS */}
+            {editSection === "tags" && (
+              <>
+                <div>
+                  <label className="text-xs text-soft mb-3 block flex items-center gap-1"><Tag size={10} />Tags — select all that apply</label>
+                  <div className="flex flex-wrap gap-2">
+                    {DIFFICULTY_TAGS.map(t => (
+                      <button key={t} type="button"
+                        onClick={() => setEditTags(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
+                        className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${
+                          editTags.includes(t)
+                            ? "bg-fire/10 border-fire/30 text-fire"
+                            : "bg-page border-line text-soft hover:border-line-hi hover:text-white"
+                        }`}>
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                  {editTags.length > 0 && (
+                    <button type="button" onClick={() => setEditTags([])}
+                      className="mt-3 text-xs text-dim hover:text-soft transition-colors">Clear all tags</button>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* ADMIN */}
+            {editSection === "admin" && (currentUser?.role === "ADMIN" || currentUser?.role === "MODERATOR") && (
+              <>
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-ultra/6 border border-ultra/20 mb-2">
+                  <Shield size={13} style={{ color: "#cc44ff" }} />
+                  <p className="text-xs text-soft">Admin-only fields. Changes apply immediately.</p>
+                </div>
+                <div>
+                  <label className="text-xs text-soft mb-1 block">Map Status</label>
+                  <div className="relative">
+                    <select value={editStatus} onChange={e => setEditStatus(e.target.value)}
+                      className="appearance-none w-full px-3 py-2 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none cursor-pointer">
+                      <option value="PENDING"  style={{ background: "#111127" }}>PENDING — Awaiting review</option>
+                      <option value="APPROVED" style={{ background: "#111127" }}>APPROVED — Visible to all</option>
+                      <option value="FEATURED" style={{ background: "#111127" }}>FEATURED — Highlighted ★</option>
+                      <option value="REMOVED"  style={{ background: "#111127" }}>REMOVED — Hidden</option>
+                    </select>
+                    <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-soft pointer-events-none" />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {editError && <p className="text-xs text-fire bg-fire/8 border border-fire/15 rounded-lg px-3 py-2">{editError}</p>}
+
+            <div className="flex gap-2 pt-1">
+              <button type="submit" disabled={editSaving} className="px-5 py-2 fire-btn text-sm disabled:opacity-50 flex items-center gap-2">
+                {editSaving && <Loader2 size={12} className="animate-spin" />}
+                {editSaving ? "Saving…" : "Save Changes"}
+              </button>
+              <button type="button" onClick={() => setEditing(false)}
+                className="px-4 py-2 border border-line rounded-xl text-sm text-soft hover:border-line-hi transition-colors">
+                Cancel
+              </button>
             </div>
-            <div>
-              <label className="text-xs text-soft mb-1 block">BPM Min</label>
-              <input type="number" min={0} value={editBpmMin} onChange={e => setEditBpmMin(+e.target.value)} className="w-full px-3 py-2 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none" />
-            </div>
-            <div>
-              <label className="text-xs text-soft mb-1 block">BPM Max</label>
-              <input type="number" min={0} value={editBpmMax} onChange={e => setEditBpmMax(+e.target.value)} className="w-full px-3 py-2 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none" />
-            </div>
-          </div>
-          <div>
-            <label className="text-xs text-soft mb-1 block">Video URL</label>
-            <input type="url" value={editVideo} onChange={e => setEditVideo(e.target.value)} placeholder="https://youtube.com/watch?v=…" className="w-full px-3 py-2 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none" />
-          </div>
-          <div>
-            <label className="text-xs text-soft mb-1 block">Steam Workshop URL</label>
-            <input type="url" value={editDown} onChange={e => setEditDown(e.target.value)} placeholder="https://steamcommunity.com/sharedfiles/filedetails/?id=…" className="w-full px-3 py-2 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none" />
-            <p className="text-[10px] text-dim mt-1">Only Steam Workshop links are accepted.</p>
-          </div>
-          <div>
-            <label className="text-xs text-soft mb-1 block">Description</label>
-            <textarea rows={2} value={editDesc} onChange={e => setEditDesc(e.target.value)} maxLength={1000} className="w-full px-3 py-2 rounded-xl text-sm bg-page border border-line focus:border-fire text-white outline-none resize-none" />
-          </div>
-          {editError && <p className="text-xs text-fire">{editError}</p>}
-          <div className="flex gap-2">
-            <button type="submit" disabled={editSaving} className="px-4 py-2 fire-btn text-sm disabled:opacity-50">{editSaving ? "Saving…" : "Save"}</button>
-            <button type="button" onClick={() => setEditing(false)} className="px-4 py-2 border border-line rounded-xl text-sm text-soft hover:border-line-hi transition-colors">Cancel</button>
           </div>
         </form>
       )}
