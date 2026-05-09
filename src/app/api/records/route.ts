@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    const { mapId, accuracy, cleared, score, note } = await req.json();
+    const { mapId, accuracy, cleared, score, note, videoUrl } = await req.json();
 
     if (!mapId) return NextResponse.json({ error: "mapId is required" }, { status: 400 });
     if (accuracy == null || accuracy < 0 || accuracy > 100) {
@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
         score:    score ?? 0,
         xp,
         note:     note ?? null,
+        videoUrl: videoUrl ?? null,
         attempts: 1,
       },
       update: {
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
         score:    score ?? 0,
         xp,
         note:     note ?? null,
+        videoUrl: videoUrl ?? null,
         attempts: { increment: 1 },
       },
     });

@@ -41,5 +41,32 @@ body {
   font-weight: 700;
   border-radius: 10px;
   transition: opacity 0.15s, transform 0.15s;
+  display: inline-block;
 }
 .fire-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+
+/* Mobile: prevent horizontal overflow */
+@media (max-width: 640px) {
+  body { overflow-x: hidden; }
+
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Larger tap targets on mobile */
+  button, a { min-height: 36px; }
+
+  /* Prevent textarea resize issues */
+  textarea { max-width: 100%; }
+
+  /* Improve readability of small text on small screens */
+  .tabular-nums { font-size: 0.8rem; }
+}
+
+/* Smooth focus rings */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+}
+
+/* Recharts responsive fix */
+.recharts-wrapper {
+  width: 100% !important;
+}

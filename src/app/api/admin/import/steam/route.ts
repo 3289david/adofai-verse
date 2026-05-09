@@ -28,6 +28,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Pre-flight: verify DB schema has required columns before doing any work
+  try {
+    await db.map.findFirst({
+      select: { externalId: true, workshopUrl: true, creatorName: true, videoUrl: true },
+      take: 1,
+    });
+  } catch (schemaErr) {
+    return NextResponse.json({
+      error:
+        "Database schema is missing required columns. " +
+        "Run `npm run db:push` on the server, then try again.\n\n" +
+        String(schemaErr),
+    }, { status: 500 });
+  }
+
   try {
     // Find or create the steam import bot
     let botUser = await db.user.findFirst({ where: { username: "steam-workshop" } });

@@ -49,7 +49,7 @@ export default function AICoachPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10 flex flex-col" style={{height:"calc(100vh - 56px)"}}>
+    <div className="mx-auto max-w-5xl px-4 py-10 flex flex-col" style={{height:"calc(100vh - 56px)"}}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div>

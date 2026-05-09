@@ -74,7 +74,7 @@ export default function ApiDocsPage() {
           </h1>
         </div>
         <p className="text-base" style={{ color: "#7777aa" }}>
-          Build your own ADOFAI tools with the ADOFAI.VERSE REST API. Free to use,
+          Build your own ADOFAI tools with the ADOFAI.NET REST API. Free to use,
           no authentication required for public endpoints.
         </p>
       </div>
@@ -93,7 +93,7 @@ export default function ApiDocsPage() {
           className="text-sm font-mono"
           style={{ color: "#f0f0ff" }}
         >
-          https://adofai.verse/api
+          https://adofai.net/api
         </code>
         <p className="text-xs mt-2" style={{ color: "#7777aa" }}>
           All responses are JSON. Rate limit: 60 requests/minute for public endpoints.

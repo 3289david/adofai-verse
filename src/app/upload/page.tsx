@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, Music, FileText, Tag, CheckCircle } from "lucide-react";
+import { Upload, Music, FileText, Tag, CheckCircle, Folder } from "lucide-react";
 import { DifficultyBadge } from "@/components/DifficultyBadge";
 import { getDifficultyColor, DIFFICULTY_TAGS } from "@/lib/utils";
 
@@ -61,8 +61,10 @@ function parseAdofaiFile(content: string, filename: string): ParsedFile {
 
 export default function UploadPage() {
   const router = useRouter();
+  const folderInputRef = useRef<HTMLInputElement>(null);
   const [me,           setMe]           = useState<{ username: string } | null | undefined>(undefined);
   const [drag,         setDrag]         = useState(false);
+  const [folderMode,   setFolderMode]   = useState(false);
   const [parsed,       setParsed]       = useState<ParsedFile | null>(null);
   const [title,        setTitle]        = useState("");
   const [artist,       setArtist]       = useState("");
@@ -81,6 +83,14 @@ export default function UploadPage() {
     fetch("/api/auth/me").then(r => r.ok ? r.json() : null).then(setMe);
   }, []);
 
+  useEffect(() => {
+    if (folderInputRef.current) {
+      folderInputRef.current.setAttribute("webkitdirectory", "");
+      folderInputRef.current.setAttribute("directory", "");
+      folderInputRef.current.setAttribute("multiple", "");
+    }
+  }, [folderMode]);
+
   function handleFile(file: File) {
     const r = new FileReader();
     r.onload = e => {
@@ -92,6 +102,22 @@ export default function UploadPage() {
       } catch { alert("Invalid .adofai file."); }
     };
     r.readAsText(file);
+  }
+
+  function handleFolder(files: FileList) {
+    let adofaiFile: File | null = null;
+    let imageFile:  File | null = null;
+    for (const file of Array.from(files)) {
+      const lower = file.name.toLowerCase();
+      if ((lower.endsWith(".adofai") || lower.endsWith(".json")) && !adofaiFile) {
+        adofaiFile = file;
+      } else if (file.type.startsWith("image/") && !imageFile) {
+        imageFile = file;
+      }
+    }
+    if (!adofaiFile) { alert("No .adofai file found in the selected folder."); return; }
+    handleFile(adofaiFile);
+    if (imageFile && !coverFile) handleCover(imageFile);
   }
 
   function handleCover(file: File) {
@@ -189,18 +215,46 @@ export default function UploadPage() {
       {/* File drop */}
       {!parsed ? (
         <div className="mb-6">
-          <label htmlFor="adofai-file"
-            onDragOver={e => { e.preventDefault(); setDrag(true); }}
-            onDragLeave={() => setDrag(false)}
-            onDrop={e => { e.preventDefault(); setDrag(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
-            className={`block cursor-pointer border-2 border-dashed rounded-xl p-10 text-center transition-colors ${drag ? "border-fire/50 bg-fire/5" : "border-line hover:border-line-hi"}`}>
-            <Upload size={32} className={`mx-auto mb-2 ${drag ? "text-fire" : "text-dim"}`} />
-            <p className="font-bold text-white mb-1">Drop your .adofai file here</p>
-            <p className="text-sm text-soft">or <span className="text-fire">click to browse</span></p>
-            <p className="text-xs text-dim mt-1">Title, artist, BPM, and tile count will be auto-filled</p>
-          </label>
-          <input id="adofai-file" type="file" accept=".adofai,.json" className="hidden"
-            onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+          {/* Toggle file vs folder mode */}
+          <div className="flex gap-2 mb-3">
+            <button type="button" onClick={() => setFolderMode(false)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${!folderMode ? "bg-fire/10 border border-fire/25 text-fire" : "border border-line text-soft hover:text-white"}`}>
+              <Upload size={12} />Single file
+            </button>
+            <button type="button" onClick={() => setFolderMode(true)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${folderMode ? "bg-fire/10 border border-fire/25 text-fire" : "border border-line text-soft hover:text-white"}`}>
+              <Folder size={12} />Whole folder
+            </button>
+          </div>
+
+          {!folderMode ? (
+            <>
+              <label htmlFor="adofai-file"
+                onDragOver={e => { e.preventDefault(); setDrag(true); }}
+                onDragLeave={() => setDrag(false)}
+                onDrop={e => { e.preventDefault(); setDrag(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
+                className={`block cursor-pointer border-2 border-dashed rounded-xl p-10 text-center transition-colors ${drag ? "border-fire/50 bg-fire/5" : "border-line hover:border-line-hi"}`}>
+                <Upload size={32} className={`mx-auto mb-2 ${drag ? "text-fire" : "text-dim"}`} />
+                <p className="font-bold text-white mb-1">Drop your .adofai file here</p>
+                <p className="text-sm text-soft">or <span className="text-fire">click to browse</span></p>
+                <p className="text-xs text-dim mt-1">Title, artist, BPM, and tile count will be auto-filled</p>
+              </label>
+              <input id="adofai-file" type="file" accept=".adofai,.json" className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+            </>
+          ) : (
+            <>
+              <label htmlFor="adofai-folder"
+                className="block cursor-pointer border-2 border-dashed rounded-xl p-10 text-center transition-colors border-line hover:border-line-hi">
+                <Folder size={32} className="mx-auto mb-2 text-dim" />
+                <p className="font-bold text-white mb-1">Click to select your level folder</p>
+                <p className="text-sm text-soft">Automatically finds the .adofai file and cover image inside</p>
+                <p className="text-xs text-dim mt-1">Folder drag-and-drop is not supported by browsers — click to pick</p>
+              </label>
+              <input id="adofai-folder" type="file" className="hidden" ref={folderInputRef}
+                onChange={e => { if (e.target.files?.length) handleFolder(e.target.files); }} />
+            </>
+          )}
         </div>
       ) : (
         <div className="flex items-center gap-3 p-3 mb-6 bg-easy/8 border border-easy/20 rounded-xl text-sm">

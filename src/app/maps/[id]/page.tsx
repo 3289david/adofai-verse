@@ -60,12 +60,15 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
   const [currentUser, setCurrentUser] = useState<AuthUser | null | undefined>(undefined);
   const [tab,         setTab]         = useState<Tab>("Overview");
   const [liked,       setLiked]       = useState(false);
+  const [likeCount,   setLikeCount]   = useState(0);
+  const [likeLoading, setLikeLoading] = useState(false);
   const [aiLoading,   setAiLoading]   = useState(false);
   const [aiResult,    setAiResult]    = useState<AIAnalysisResult | null>(null);
   const [aiError,     setAiError]     = useState("");
 
   // Record submission state
   const [recAcc,      setRecAcc]      = useState("");
+  const [recVideoUrl, setRecVideoUrl] = useState("");
   const [recCleared,  setRecCleared]  = useState(false);
   const [recScore,    setRecScore]    = useState("");
   const [recNote,     setRecNote]     = useState("");
@@ -78,10 +81,13 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
     Promise.all([
       fetch(`/api/maps/${id}`).then(r => r.ok ? r.json() : null),
       fetch("/api/auth/me").then(r => r.ok ? r.json() : null),
-    ]).then(([mapData, user]) => {
+      fetch(`/api/maps/${id}/like`).then(r => r.ok ? r.json() : { liked: false, likeCount: 0 }),
+    ]).then(([mapData, user, likeData]) => {
       setMap(mapData);
       setRecords(mapData?.records ?? []);
       setCurrentUser(user);
+      setLiked(likeData.liked ?? false);
+      setLikeCount(likeData.likeCount ?? mapData?.likeCount ?? 0);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [id]);
@@ -102,14 +108,33 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
   const dc           = getDifficultyColor(map.difficulty);
   const ytId         = map.videoUrl ? getYouTubeId(map.videoUrl) : null;
   const hasVideo     = !!map.videoUrl;
-  const hasBpm       = (map.bpmData?.length ?? 0) > 0;
+  const hasBpm       = (map.bpmData?.length ?? 0) > 0 || map.bpmMin > 0;
   const src          = sourceLabel(map.externalId);
   const displayCreator = map.creatorName || map.creator.username;
+  const estDur       = map.duration > 0 ? map.duration : estimateDuration(map.tileCount, map.bpmMin, map.bpmMax);
   const displayDuration = map.duration > 0
     ? formatDuration(map.duration)
     : map.tileCount > 0
-      ? formatDuration(estimateDuration(map.tileCount, map.bpmMin, map.bpmMax)) + " ~"
+      ? formatDuration(estDur) + " ~"
       : "Unknown";
+  const bpmChartData = map.bpmData ?? (map.bpmMin > 0 ? [
+    { time: 0, bpm: map.bpmMin },
+    { time: estDur, bpm: map.bpmMax > map.bpmMin ? map.bpmMax : map.bpmMin },
+  ] : []);
+
+  async function toggleLike() {
+    if (!currentUser) { window.location.href = "/login"; return; }
+    if (likeLoading) return;
+    setLikeLoading(true);
+    try {
+      const r = await fetch(`/api/maps/${id}/like`, { method: "POST" });
+      if (r.ok) {
+        const d = await r.json();
+        setLiked(d.liked);
+        setLikeCount(d.likeCount);
+      }
+    } finally { setLikeLoading(false); }
+  }
 
   async function runAI() {
     setAiLoading(true); setAiError("");
@@ -134,15 +159,20 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
         setRecError("Accuracy must be between 0 and 100.");
         return;
       }
+      if (!recVideoUrl.trim()) {
+        setRecError("A gameplay video URL is required.");
+        return;
+      }
       const res = await fetch("/api/records", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          mapId:   id,
+          mapId:    id,
           accuracy: acc,
-          cleared: recCleared,
-          score:   recScore ? parseInt(recScore) : 0,
-          note:    recNote || null,
+          cleared:  recCleared,
+          score:    recScore ? parseInt(recScore) : 0,
+          note:     recNote || null,
+          videoUrl: recVideoUrl.trim(),
         }),
       });
       if (!res.ok) {
@@ -151,10 +181,9 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
         return;
       }
       setRecSuccess(true);
-      // Refresh records
       const updated = await fetch(`/api/maps/${id}`).then(r => r.ok ? r.json() : null);
       if (updated?.records) setRecords(updated.records);
-      setRecAcc(""); setRecScore(""); setRecNote(""); setRecCleared(false);
+      setRecAcc(""); setRecScore(""); setRecNote(""); setRecCleared(false); setRecVideoUrl("");
     } catch { setRecError("Network error. Please try again."); }
     finally  { setRecLoading(false); }
   }
@@ -237,10 +266,10 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
                     <Youtube size={13} />Watch
                   </button>
                 )}
-                <button onClick={() => setLiked(l => !l)}
-                  className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${liked ? "bg-fire/10 border-fire/30 text-fire" : "bg-page border-line text-soft hover:border-line-hi"}`}>
+                <button onClick={toggleLike} disabled={likeLoading}
+                  className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border transition-colors disabled:opacity-60 ${liked ? "bg-fire/10 border-fire/30 text-fire" : "bg-page border-line text-soft hover:border-line-hi"}`}>
                   <Heart size={13} fill={liked ? "currentColor" : "none"} />
-                  {formatNumber(map.likeCount + (liked ? 1 : 0))}
+                  {formatNumber(likeCount)}
                 </button>
               </div>
             </div>
@@ -251,7 +280,7 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
                 <div className="text-xs text-soft">Plays</div>
               </div>
               <div>
-                <div className="text-xl font-black text-fire">{formatNumber(map.likeCount)}</div>
+                <div className="text-xl font-black text-fire">{formatNumber(likeCount)}</div>
                 <div className="text-xs text-soft">Likes</div>
               </div>
               {records.length > 0 && (
@@ -273,7 +302,7 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
             "AI Analysis": Brain, Records: Trophy,
           };
           const Icon = icons[t];
-          const dim = (t === "Video" && !hasVideo) || (t === "BPM Chart" && !hasBpm);
+          const dim = (t === "Video" && !hasVideo) || (t === "BPM Chart" && map.bpmMin === 0);
           return (
             <button key={t} onClick={() => !dim && setTab(t)}
               className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors
@@ -334,10 +363,15 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
         {/* BPM CHART */}
         {tab === "BPM Chart" && (
           <div>
-            <p className="text-sm font-bold text-white mb-4">BPM Over Time</p>
+            <div className="flex items-center gap-2 mb-4">
+              <p className="text-sm font-bold text-white">BPM Over Time</p>
+              {!map.bpmData && map.bpmMin > 0 && (
+                <span className="text-[10px] px-2 py-0.5 rounded bg-line text-soft border border-line">estimated range</span>
+              )}
+            </div>
             {hasBpm ? (
               <ResponsiveContainer width="100%" height={260}>
-                <AreaChart data={map.bpmData!} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
+                <AreaChart data={bpmChartData} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
                   <defs>
                     <linearGradient id="bpmGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%"  stopColor="#0077ff" stopOpacity={0.25} />
@@ -498,11 +532,17 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
                       </Link>
                       <p className="text-xs text-dim">{FLAGS[rec.user.country ?? ""] ?? <Globe size={10} className="inline" />} {rec.user.country ?? "Unknown"}</p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex flex-col items-end gap-0.5">
                       <div className="text-sm font-bold text-easy tabular-nums">{rec.accuracy.toFixed(2)}%</div>
                       {rec.cleared && <div className="text-[10px] text-ice font-bold">CLEARED</div>}
                       {rec.score !== undefined && rec.score > 0 && (
                         <div className="text-xs text-dim tabular-nums">{rec.score.toLocaleString()} pts</div>
+                      )}
+                      {(rec as MapRecord & { videoUrl?: string }).videoUrl && (
+                        <a href={(rec as MapRecord & { videoUrl?: string }).videoUrl!} target="_blank" rel="noopener noreferrer"
+                          className="text-[10px] text-red-400 hover:text-red-300 flex items-center gap-0.5">
+                          <Youtube size={9} />video
+                        </a>
                       )}
                     </div>
                   </div>
@@ -541,6 +581,15 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
                           placeholder="0"
                           className="w-full px-3 py-2 rounded-xl text-sm outline-none bg-page border border-line focus:border-fire text-white" />
                       </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-soft mb-1 block flex items-center gap-1">
+                        <Youtube size={10} />Gameplay Video URL <span className="text-fire ml-0.5">*</span>
+                      </label>
+                      <input type="url" required
+                        value={recVideoUrl} onChange={e => setRecVideoUrl(e.target.value)}
+                        placeholder="https://youtube.com/watch?v=… (required)"
+                        className="w-full px-3 py-2 rounded-xl text-sm outline-none bg-page border border-line focus:border-fire text-white" />
                     </div>
                     <div>
                       <label className="text-xs text-soft mb-1 block">Note (optional)</label>
