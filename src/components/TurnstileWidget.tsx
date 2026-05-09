@@ -26,6 +26,9 @@ declare global {
       reset: (widgetId: string) => void;
       remove: (widgetId: string) => void;
     };
+    _turnstileOnLoad?: () => void;
+    _turnstileReady?: boolean;
+    _turnstileQueue?: (() => void)[];
   }
 }
 
@@ -33,7 +36,6 @@ export function TurnstileWidget({ onToken, onError, onExpire, className = "" }: 
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef  = useRef<string | null>(null);
 
-  // Keep callback refs always current — avoids stale closure issues
   const onTokenRef  = useRef(onToken);
   const onErrorRef  = useRef(onError);
   const onExpireRef = useRef(onExpire);
@@ -44,30 +46,15 @@ export function TurnstileWidget({ onToken, onError, onExpire, className = "" }: 
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
   useEffect(() => {
-    // Dev / no key configured: bypass immediately
     if (!siteKey) {
-      const t = setTimeout(() => onTokenRef.current("dev-bypass-token"), 100);
-      return () => clearTimeout(t);
+      onTokenRef.current("dev-bypass-token");
+      return;
     }
 
-    // Inject Turnstile script once (no ?onload= — we poll instead)
-    const SCRIPT_ID = "cf-turnstile-script";
-    if (!document.getElementById(SCRIPT_ID)) {
-      const s = document.createElement("script");
-      s.id    = SCRIPT_ID;
-      s.src   = "https://challenges.cloudflare.com/turnstile/v0/api.js";
-      s.async = true;
-      document.head.appendChild(s);
-    }
-
-    // Poll until turnstile API is ready, then render once
-    const interval = setInterval(() => {
-      if (!window.turnstile || !containerRef.current) return;
-      if (widgetIdRef.current) { clearInterval(interval); return; }
-
-      clearInterval(interval);
+    function renderWidget() {
+      if (!window.turnstile || !containerRef.current || widgetIdRef.current) return;
       widgetIdRef.current = window.turnstile.render(containerRef.current, {
-        sitekey: siteKey,
+        sitekey: siteKey!,
         theme:   "dark",
         size:    "normal",
         callback:           (token) => onTokenRef.current(token),
@@ -77,17 +64,37 @@ export function TurnstileWidget({ onToken, onError, onExpire, className = "" }: 
           onExpireRef.current?.();
         },
       });
-    }, 150);
+    }
+
+    if (window._turnstileReady && window.turnstile) {
+      renderWidget();
+    } else {
+      if (!window._turnstileQueue) window._turnstileQueue = [];
+      window._turnstileQueue.push(renderWidget);
+
+      const SCRIPT_ID = "cf-turnstile-script";
+      if (!document.getElementById(SCRIPT_ID)) {
+        window._turnstileOnLoad = () => {
+          window._turnstileReady = true;
+          window._turnstileQueue?.forEach(fn => fn());
+          window._turnstileQueue = [];
+        };
+        const s = document.createElement("script");
+        s.id    = SCRIPT_ID;
+        s.src   = "https://challenges.cloudflare.com/turnstile/v0/api.js?onload=_turnstileOnLoad";
+        s.async = true;
+        document.head.appendChild(s);
+      }
+    }
 
     return () => {
-      clearInterval(interval);
       if (window.turnstile && widgetIdRef.current) {
         try { window.turnstile.remove(widgetIdRef.current); } catch { /* ignore */ }
         widgetIdRef.current = null;
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // run once on mount — callbacks are accessed via refs
+  }, []);
 
   return (
     <div

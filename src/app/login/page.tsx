@@ -1,69 +1,25 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { Flame, Eye, EyeOff, Shield, Loader2 } from "lucide-react";
 import { TurnstileWidget } from "@/components/TurnstileWidget";
-import { solvePoW } from "@/lib/pow-client";
 
 export default function LoginPage() {
-  const [email,         setEmail]         = useState("");
-  const [password,      setPassword]      = useState("");
-  const [showPass,      setShowPass]      = useState(false);
-  const [loading,       setLoading]       = useState(false);
-  const [error,         setError]         = useState("");
+  const [email,    setEmail]    = useState("");
+  const [password, setPassword] = useState("");
+  const [showPass, setShowPass] = useState(false);
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState("");
 
-  // Anti-spam state
   const [turnstileToken, setTurnstileToken] = useState("");
-  const [powToken,       setPowToken]       = useState("");
-  const [powNonce,       setPowNonce]       = useState("");
-  const [powReady,       setPowReady]       = useState(false);
-  const [powStatus,      setPowStatus]      = useState<"idle" | "solving" | "ready">("idle");
   const formLoadedAt = useRef(Date.now());
-  const powAbort     = useRef<AbortController | null>(null);
-
-  // Fetch PoW challenge and solve it in the background on mount
-  const startPoW = useCallback(async () => {
-    setPowStatus("solving");
-    setPowReady(false);
-    try {
-      const res  = await fetch("/api/auth/pow");
-      if (!res.ok) { setPowStatus("idle"); return; }
-      const data = await res.json() as { challenge: string; difficulty: number; token: string };
-
-      powAbort.current?.abort();
-      powAbort.current = new AbortController();
-      const nonce = await solvePoW(data.challenge, data.difficulty, powAbort.current.signal);
-      setPowToken(data.token);
-      setPowNonce(nonce);
-      setPowReady(true);
-      setPowStatus("ready");
-    } catch {
-      // PoW failure is non-blocking — Turnstile + rate limiting remain as primary guards
-      setPowStatus("idle");
-    }
-  }, []);
-
-  useEffect(() => {
-    startPoW();
-    return () => powAbort.current?.abort();
-  }, [startPoW]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    // Client-side gates — checked before going into loading state
     if (!turnstileToken) {
       setError("Please complete the verification check first.");
-      return;
-    }
-    if (!powReady) {
-      if (powStatus === "solving") {
-        setError("Security check still running — please wait a moment.");
-      } else {
-        setError("Security check failed. Please reload the page.");
-        startPoW();
-      }
       return;
     }
 
@@ -78,8 +34,6 @@ export default function LoginPage() {
           email,
           password,
           turnstile:    turnstileToken,
-          powToken,
-          powNonce,
           honeypot:     (document.getElementById("hp-website") as HTMLInputElement)?.value ?? "",
           formLoadedAt: formLoadedAt.current,
         }),
@@ -88,9 +42,6 @@ export default function LoginPage() {
       if (!res.ok) {
         const data = await res.json();
         setError(data.error ?? "Login failed");
-        // Refresh PoW after failure
-        setPowReady(false);
-        startPoW();
         return;
       }
 
@@ -139,7 +90,7 @@ export default function LoginPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Honeypot — hidden from real users, bots fill it */}
+          {/* Honeypot */}
           <input
             id="hp-website"
             type="text"
@@ -195,21 +146,21 @@ export default function LoginPage() {
           {/* Cloudflare Turnstile */}
           <TurnstileWidget
             onToken={setTurnstileToken}
-            onError={() => setError("Verification widget failed. Please reload.")}
-            onExpire={() => { setTurnstileToken(""); setError("Verification expired — please complete the challenge again."); }}
+            onError={() => setError("Verification failed. Please reload.")}
+            onExpire={() => { setTurnstileToken(""); setError("Verification expired — please try again."); }}
             className="mt-1"
           />
 
           {/* Verification status */}
-          {turnstileToken && powStatus === "ready" ? (
+          {turnstileToken ? (
             <div className="flex items-center gap-2 text-xs" style={{ color: "#44dd88" }}>
               <Shield size={11} className="flex-shrink-0" />
               Verified — ready to sign in
             </div>
           ) : (
             <div className="flex items-center gap-2 text-xs" style={{ color: "#7777aa" }}>
-              {(!turnstileToken || powStatus === "solving") && <Loader2 size={11} className="animate-spin flex-shrink-0" />}
-              {!turnstileToken ? "Waiting for verification…" : powStatus === "solving" ? "Finalizing security check…" : ""}
+              <Loader2 size={11} className="animate-spin flex-shrink-0" />
+              Loading verification…
             </div>
           )}
 

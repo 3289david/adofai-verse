@@ -5,7 +5,6 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { signToken, setTokenCookie } from "@/lib/auth";
 import { verifyTurnstile } from "@/lib/turnstile";
-import { verifyPoWSolution } from "@/lib/pow";
 import { rateLimit, getIp } from "@/lib/rate-limit";
 import { sendVerificationEmail, isDisposableEmail } from "@/lib/email";
 
@@ -13,12 +12,9 @@ const schema = z.object({
   username:    z.string().min(3).max(20).regex(/^[a-zA-Z0-9_-]+$/),
   email:       z.string().email().max(254),
   password:    z.string().min(8).max(128),
-  // anti-spam fields
   turnstile:   z.string().optional(),
-  powToken:    z.string().optional(),
-  powNonce:    z.string().optional(),
-  honeypot:    z.string().optional(), // must be empty
-  formLoadedAt: z.number().optional(), // timestamp ms
+  honeypot:    z.string().optional(),
+  formLoadedAt: z.number().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -35,7 +31,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const parsed = schema.parse(body);
-    const { username, email, password, turnstile, powToken, powNonce, honeypot, formLoadedAt } = parsed;
+    const { username, email, password, turnstile, honeypot, formLoadedAt } = parsed;
 
     // Honeypot: bots fill hidden fields, humans don't
     if (honeypot && honeypot.trim().length > 0) {
@@ -56,14 +52,6 @@ export async function POST(req: NextRequest) {
     if (!turnstileOk) {
       return NextResponse.json(
         { error: "Human verification failed. Please complete the challenge." },
-        { status: 400 }
-      );
-    }
-
-    // Proof-of-Work — required
-    if (!verifyPoWSolution(powToken, powNonce)) {
-      return NextResponse.json(
-        { error: "Security check failed. Please wait for the check to complete and try again." },
         { status: 400 }
       );
     }
