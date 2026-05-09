@@ -29,9 +29,10 @@ export default function RegisterPage() {
     setPowReady(false);
     try {
       const res  = await fetch("/api/auth/pow");
+      if (!res.ok) { setPowStatus("idle"); return; }
       const data = await res.json() as { challenge: string; difficulty: number; token: string };
-      if (!res.ok) return;
 
+      powAbort.current?.abort();
       powAbort.current = new AbortController();
       const nonce = await solvePoW(data.challenge, data.difficulty, powAbort.current.signal);
       setPowToken(data.token);
@@ -50,7 +51,6 @@ export default function RegisterPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!powReady) { setError("Security check still running. Please wait a moment."); return; }
     if (!turnstileToken) { setError("Please complete the human verification challenge."); return; }
 
     setLoading(true);
@@ -249,7 +249,7 @@ export default function RegisterPage() {
             )}
 
             <button type="submit"
-              disabled={loading || !powReady || !turnstileToken}
+              disabled={loading || !turnstileToken}
               className="w-full py-3 rounded-xl font-bold text-sm transition-all disabled:opacity-60 mt-2 flex items-center justify-center gap-2"
               style={{ background: "linear-gradient(135deg, #ff2244, #ff8800)", color: "white" }}>
               {loading && <Loader2 size={14} className="animate-spin" />}

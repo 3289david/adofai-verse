@@ -1,7 +1,7 @@
 import { createHmac, createHash, randomBytes } from "crypto";
 
-/** Number of leading hex zeros required. 4 = ~65K hashes ≈ 0.5-2s in browser. */
-export const POW_DIFFICULTY = 4;
+/** Number of leading hex zeros required. 3 = ~4K hashes ≈ <200ms in browser. */
+export const POW_DIFFICULTY = 3;
 /** Challenge token validity window */
 const EXPIRES_MS = 10 * 60_000; // 10 minutes
 

@@ -55,8 +55,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Proof-of-Work verification
-    if (!verifyPoWSolution(powToken, powNonce)) {
+    // Proof-of-Work verification (optional bonus layer — required only when provided)
+    if (powToken && powNonce && !verifyPoWSolution(powToken, powNonce)) {
       return NextResponse.json(
         { error: "Security check failed. Please reload and try again." },
         { status: 400 }
