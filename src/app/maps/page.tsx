@@ -24,12 +24,13 @@ export default function MapsPage() {
   const [loading, setLoading] = useState(true);
   const [more,    setMore]    = useState(false);
 
-  const [q,       setQ]       = useState("");
-  const [diffMin, setDiffMin] = useState(0);
-  const [diffMax, setDiffMax] = useState(21);
-  const [tags,    setTags]    = useState<string[]>([]);
-  const [sort,    setSort]    = useState("random");
-  const [showF,   setShowF]   = useState(false);
+  const [q,           setQ]           = useState("");
+  const [diffMin,     setDiffMin]     = useState(0);
+  const [diffMax,     setDiffMax]     = useState(21);
+  const [tags,        setTags]        = useState<string[]>([]);
+  const [sort,        setSort]        = useState("random");
+  const [sortLocked,  setSortLocked]  = useState(false);
+  const [showF,       setShowF]       = useState(false);
 
   const LIMIT = 24;
 
@@ -56,8 +57,17 @@ export default function MapsPage() {
     return () => clearTimeout(t);
   }, [fetchMaps, q]);
 
+  // Auto-switch sort: random when unfiltered, popular when user searches/filters
+  // Only applies if the user hasn't manually chosen a sort themselves
+  const isFiltered = q.trim() !== "" || diffMin > 0 || diffMax < 21 || tags.length > 0;
+  useEffect(() => {
+    if (sortLocked) return;
+    setSort(isFiltered ? "popular" : "random");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFiltered, sortLocked]);
+
   const toggle  = (t: string) => setTags(p => p.includes(t) ? p.filter(x => x !== t) : [...p, t]);
-  const reset   = () => { setDiffMin(0); setDiffMax(21); setTags([]); };
+  const reset   = () => { setDiffMin(0); setDiffMax(21); setTags([]); setSortLocked(false); };
   const dirty   = diffMin > 0 || diffMax < 21 || tags.length > 0;
   const hasMore = maps.length < total;
 
@@ -79,7 +89,7 @@ export default function MapsPage() {
             placeholder="Search maps, artists, creators…"
             className="w-full bg-card border border-line rounded-xl pl-9 pr-9 py-2.5 text-sm text-white placeholder:text-soft outline-none focus:border-line-hi"
           />
-          {q && <button onClick={() => setQ("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-soft"><X size={13} /></button>}
+          {q && <button onClick={() => { setQ(""); setSortLocked(false); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-soft"><X size={13} /></button>}
         </div>
         <div className="flex gap-2">
           <button
@@ -89,7 +99,7 @@ export default function MapsPage() {
             Filters {dirty && <span className="ml-1 w-4 h-4 rounded-full bg-fire text-white text-[10px] inline-flex items-center justify-center font-black">!</span>}
           </button>
           <div className="relative">
-            <select value={sort} onChange={e => setSort(e.target.value)}
+            <select value={sort} onChange={e => { setSort(e.target.value); setSortLocked(true); }}
               className="appearance-none bg-card border border-line rounded-xl pl-3 pr-8 py-2.5 text-sm text-soft outline-none cursor-pointer hover:border-line-hi">
               {SORTS.map(o => <option key={o.value} value={o.value} style={{background:"#111127"}}>{o.label}</option>)}
             </select>
