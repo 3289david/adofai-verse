@@ -2,18 +2,24 @@ import { Resend } from "resend";
 
 const APP_URL   = process.env.NEXT_PUBLIC_APP_URL ?? "https://adofai.net";
 const FROM_NAME = "ADOFAI.NET";
-const FROM_ADDR = process.env.RESEND_FROM ?? "onboarding@resend.dev";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
-  if (!process.env.RESEND_API_KEY) {
-    console.error("[email] RESEND_API_KEY is not set — cannot send emails");
+  const apiKey = process.env.RESEND_API_KEY;
+  const from   = process.env.RESEND_FROM ?? "onboarding@resend.dev";
+
+  console.log("[email] Attempting send to:", to);
+  console.log("[email] RESEND_API_KEY set:", !!apiKey);
+  console.log("[email] From:", `${FROM_NAME} <${from}>`);
+
+  if (!apiKey) {
+    console.error("[email] RESEND_API_KEY is not set — cannot send");
     return false;
   }
 
+  const resend = new Resend(apiKey);
+
   const { data, error } = await resend.emails.send({
-    from: `${FROM_NAME} <${FROM_ADDR}>`,
+    from: `${FROM_NAME} <${from}>`,
     to: [to],
     subject,
     html,
@@ -24,7 +30,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
     return false;
   }
 
-  console.log("[email] Sent to", to, "— id:", data?.id);
+  console.log("[email] Sent successfully — id:", data?.id);
   return true;
 }
 

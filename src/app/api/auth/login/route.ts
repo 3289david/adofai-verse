@@ -5,8 +5,6 @@ import { db } from "@/lib/db";
 import { signToken, setTokenCookie } from "@/lib/auth";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { rateLimit, getIp } from "@/lib/rate-limit";
-import { sendVerificationEmail } from "@/lib/email";
-
 const schema = z.object({
   email:       z.string().email(),
   password:    z.string().min(1),
@@ -75,13 +73,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    if (!user.emailVerified && user.emailVerifyToken) {
-      return NextResponse.json(
-        { error: "EMAIL_NOT_VERIFIED", email: user.email },
-        { status: 403 }
-      );
-    }
-
     const token = await signToken({
       id: user.id,
       username: user.username,
@@ -94,6 +85,7 @@ export async function POST(req: NextRequest) {
       username: user.username,
       email: user.email,
       role: user.role,
+      emailVerified: user.emailVerified,
     });
     return setTokenCookie(response, token);
   } catch (err) {
