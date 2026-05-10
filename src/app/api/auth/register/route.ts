@@ -9,7 +9,7 @@ import { rateLimit, getIp } from "@/lib/rate-limit";
 import { sendVerificationEmail, isDisposableEmail } from "@/lib/email";
 
 const schema = z.object({
-  username:    z.string().min(3).max(20).regex(/^[a-zA-Z0-9_-]+$/),
+  username:    z.string().min(3).max(20).regex(/^[-a-zA-Z0-9_]+$/),
   email:       z.string().email().max(254),
   password:    z.string().min(8).max(128),
   turnstile:   z.string().optional(),
@@ -90,8 +90,8 @@ export async function POST(req: NextRequest) {
         data: { username, email, passwordHash, emailVerifyToken, emailVerifyExpiry, emailVerified: false },
         select: { id: true, username: true, email: true, role: true },
       });
-      // Send verification email (best-effort; exe.dev gateway may limit recipients)
-      await sendVerificationEmail(email, emailVerifyToken).catch(() => {});
+      const sent = await sendVerificationEmail(email, emailVerifyToken);
+      if (!sent) console.warn("[register] verification email failed for", email);
     } catch {
       // Columns not yet in DB — create without them (emailVerified defaults to false in schema)
       user = await db.user.create({

@@ -2,42 +2,34 @@ import { Resend } from "resend";
 
 const APP_URL   = process.env.NEXT_PUBLIC_APP_URL ?? "https://adofai.net";
 const FROM_NAME = "ADOFAI.NET";
-const FROM_ADDR = process.env.RESEND_FROM ?? "no-reply@adofai.net";
+const FROM_ADDR = process.env.RESEND_FROM ?? "onboarding@resend.dev";
 
-function getClient(): Resend | null {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) {
-    console.warn("[email] RESEND_API_KEY not set — emails will not be sent");
-    return null;
-  }
-  return new Resend(key);
-}
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
-  const resend = getClient();
-  if (!resend) return false;
-
-  try {
-    const { error } = await resend.emails.send({
-      from: `${FROM_NAME} <${FROM_ADDR}>`,
-      to,
-      subject,
-      html,
-    });
-    if (error) {
-      console.error("[email] Resend error:", error);
-      return false;
-    }
-    return true;
-  } catch (e) {
-    console.error("[email] send failed:", e);
+  if (!process.env.RESEND_API_KEY) {
+    console.error("[email] RESEND_API_KEY is not set — cannot send emails");
     return false;
   }
+
+  const { data, error } = await resend.emails.send({
+    from: `${FROM_NAME} <${FROM_ADDR}>`,
+    to: [to],
+    subject,
+    html,
+  });
+
+  if (error) {
+    console.error("[email] Resend error:", error.name, error.message);
+    return false;
+  }
+
+  console.log("[email] Sent to", to, "— id:", data?.id);
+  return true;
 }
 
 function emailTemplate(title: string, body: string, buttonText: string, buttonUrl: string): string {
-  return `
-<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8" /></head>
 <body style="margin:0;padding:0;background:#07070f;font-family:system-ui,sans-serif;">
