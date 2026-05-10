@@ -38,9 +38,12 @@ export async function PATCH(
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const ip = getIp(req);
+  const isAdmin = user.role === "ADMIN" || user.role === "MODERATOR";
 
-  // Rate limit: 10 edits per user per minute
-  if (!rateLimit(`map-edit:${user.id}`, 10, 60_000)) {
+  // Stricter rate limit for regular users, relaxed for staff
+  const editLimit = isAdmin ? 30 : 5;
+  const editWindow = isAdmin ? 60_000 : 5 * 60_000;
+  if (!rateLimit(`map-edit:${user.id}`, editLimit, editWindow)) {
     return NextResponse.json({ error: "Too many edit requests. Please slow down." }, { status: 429 });
   }
 
@@ -50,16 +53,27 @@ export async function PATCH(
     if (!map) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const isOwner = map.creatorId === user.id;
-    const isAdmin = user.role === "ADMIN" || user.role === "MODERATOR";
-    if (!isOwner && !isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const body = await req.json();
     const {
       title, artist, difficulty, bpmMin, bpmMax,
       duration, tileCount, creatorName,
       description, videoUrl, downloadUrl, tags, coverImage, status,
-      turnstile,
+      turnstile, honeypot, formLoadedAt,
     } = body;
+
+    // Honeypot check
+    if (honeypot && String(honeypot).trim().length > 0) {
+      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    }
+
+    // Form timing — must have been open at least 2 seconds
+    if (formLoadedAt && Date.now() - Number(formLoadedAt) < 2000) {
+      return NextResponse.json(
+        { error: "Form submitted too quickly. Please try again." },
+        { status: 400 }
+      );
+    }
 
     // Turnstile verification for map edits
     const turnstileOk = await verifyTurnstile(turnstile as string | undefined, ip);

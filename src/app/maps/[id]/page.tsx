@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, useRef, use } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Heart, Clock, Music, User, Layers,
@@ -91,10 +91,11 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState("");
 
-  // Turnstile gate for edit form
+  // Turnstile gate + anti-spam for edit form
   const [editTurnstileToken, setEditTurnstileToken] = useState("");
   const [editTurnstileReady, setEditTurnstileReady] = useState(false);
   const [showTurnstileGate, setShowTurnstileGate] = useState(false);
+  const editFormLoadedAt = useRef(0);
 
   const [comments, setComments] = useState<CommentData[]>([]);
   const [commentText, setCommentText] = useState("");
@@ -156,7 +157,8 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
   const estDur = map.duration > 0 ? map.duration : estimateDuration(map.tileCount, map.bpmMin, map.bpmMax);
   const displayDuration = map.duration > 0 ? formatDuration(map.duration) : map.tileCount > 0 ? formatDuration(estDur) + " ~" : "—";
   const bpmChartData = map.bpmData ?? (map.bpmMin > 0 ? [{ time: 0, bpm: map.bpmMin }, { time: estDur, bpm: map.bpmMax > map.bpmMin ? map.bpmMax : map.bpmMin }] : []);
-  const canEdit = currentUser && (currentUser.id === map.creator.id || currentUser.role === "ADMIN" || currentUser.role === "MODERATOR");
+  const canEdit = !!currentUser;
+  const isStaff = currentUser?.role === "ADMIN" || currentUser?.role === "MODERATOR";
 
   async function toggleLike() {
     if (!currentUser) { window.location.href = "/login"; return; }
@@ -181,6 +183,7 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
   function startEdit(token?: string) {
     if (!map) return;
     if (token) setEditTurnstileToken(token);
+    editFormLoadedAt.current = Date.now();
     setEditTitle(map.title);
     setEditArtist(map.artist);
     setEditCreatorName(map.creatorName ?? "");
@@ -226,6 +229,8 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
         tags:        editTags,
         status:      editStatus,
         turnstile:   editTurnstileToken,
+        honeypot:    (document.getElementById("hp-edit-website") as HTMLInputElement)?.value ?? "",
+        formLoadedAt: editFormLoadedAt.current,
       };
       if (coverImage !== undefined) body.coverImage = coverImage;
       const res = await fetch(`/api/maps/${id}`, {
@@ -403,6 +408,8 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
       {/* ── Edit form (comprehensive, tabbed sections) ── */}
       {editing && (
         <form onSubmit={saveEdit} className="mb-6 bg-card border border-line rounded-xl overflow-hidden">
+          <input id="hp-edit-website" type="text" name="website" autoComplete="off" tabIndex={-1} aria-hidden="true"
+            style={{ position: "absolute", left: "-9999px", width: "1px", height: "1px", opacity: 0 }} />
           {/* Section tabs */}
           <div className="flex border-b border-line overflow-x-auto">
             {([
@@ -410,7 +417,7 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
               { key: "stats",  label: "Stats" },
               { key: "media",  label: "Media" },
               { key: "tags",   label: "Tags" },
-              ...(currentUser?.role === "ADMIN" || currentUser?.role === "MODERATOR" ? [{ key: "admin", label: "⚙ Admin" }] : []),
+              ...(isStaff ? [{ key: "admin", label: "⚙ Admin" }] : []),
             ] as { key: typeof editSection; label: string }[]).map(s => (
               <button key={s.key} type="button" onClick={() => setEditSection(s.key)}
                 className={`flex-shrink-0 px-4 py-3 text-xs font-bold transition-colors border-b-2 ${
@@ -569,7 +576,7 @@ export default function MapDetailPage({ params }: { params: Promise<{ id: string
             )}
 
             {/* ADMIN */}
-            {editSection === "admin" && (currentUser?.role === "ADMIN" || currentUser?.role === "MODERATOR") && (
+            {editSection === "admin" && isStaff && (
               <>
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-ultra/6 border border-ultra/20 mb-2">
                   <Shield size={13} style={{ color: "#cc44ff" }} />
