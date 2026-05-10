@@ -3,17 +3,16 @@ import { Resend } from "resend";
 const APP_URL   = process.env.NEXT_PUBLIC_APP_URL ?? "https://adofai.net";
 const FROM_NAME = "ADOFAI.NET";
 
-async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+export async function sendEmail(to: string, subject: string, html: string): Promise<{ ok: boolean; id?: string; error?: string }> {
   const apiKey = process.env.RESEND_API_KEY;
   const from   = process.env.RESEND_FROM ?? "onboarding@resend.dev";
 
-  console.log("[email] Attempting send to:", to);
-  console.log("[email] RESEND_API_KEY set:", !!apiKey);
-  console.log("[email] From:", `${FROM_NAME} <${from}>`);
+  console.log(`[email] -> ${to} | subject: "${subject}" | from: ${from} | key set: ${!!apiKey}`);
 
   if (!apiKey) {
-    console.error("[email] RESEND_API_KEY is not set — cannot send");
-    return false;
+    const msg = "RESEND_API_KEY is not set in environment";
+    console.error("[email]", msg);
+    return { ok: false, error: msg };
   }
 
   const resend = new Resend(apiKey);
@@ -26,12 +25,12 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
   });
 
   if (error) {
-    console.error("[email] Resend error:", error.name, error.message);
-    return false;
+    console.error("[email] Resend rejected:", error.name, "-", error.message);
+    return { ok: false, error: `${error.name}: ${error.message}` };
   }
 
-  console.log("[email] Sent successfully — id:", data?.id);
-  return true;
+  console.log("[email] Sent OK — message id:", data?.id);
+  return { ok: true, id: data?.id };
 }
 
 function emailTemplate(title: string, body: string, buttonText: string, buttonUrl: string): string {
@@ -58,7 +57,8 @@ function emailTemplate(title: string, body: string, buttonText: string, buttonUr
             ${buttonText}
           </a>
         </td></tr>
-        <tr><td style="font-size:11px;color:#44445a;text-align:center;line-height:1.6;">
+        <tr><td style="font-size:11px;color:#44445a;text-align:center;line-height:1.6;word-break:break-all;">
+          Or copy this link: ${buttonUrl}<br/><br/>
           If you didn't request this, you can safely ignore this email.<br/>
           &copy; 2026 ADOFAI.NET
         </td></tr>
@@ -69,7 +69,7 @@ function emailTemplate(title: string, body: string, buttonText: string, buttonUr
 </html>`;
 }
 
-export async function sendVerificationEmail(to: string, token: string): Promise<boolean> {
+export async function sendVerificationEmail(to: string, token: string) {
   const link = `${APP_URL}/api/auth/verify-email?token=${encodeURIComponent(token)}`;
   return sendEmail(
     to,
@@ -83,7 +83,7 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
   );
 }
 
-export async function sendPasswordResetEmail(to: string, token: string): Promise<boolean> {
+export async function sendPasswordResetEmail(to: string, token: string) {
   const link = `${APP_URL}/reset-password?token=${encodeURIComponent(token)}`;
   return sendEmail(
     to,

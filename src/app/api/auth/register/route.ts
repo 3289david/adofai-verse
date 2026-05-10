@@ -3,7 +3,6 @@ import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { signToken, setTokenCookie } from "@/lib/auth";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { rateLimit, getIp } from "@/lib/rate-limit";
 import { sendVerificationEmail, isDisposableEmail } from "@/lib/email";
@@ -20,7 +19,6 @@ const schema = z.object({
 export async function POST(req: NextRequest) {
   const ip = getIp(req);
 
-  // Rate limit: 2 registrations per IP per 30 minutes, blocked for 24 hours on abuse
   if (!rateLimit(`register:${ip}`, 2, 30 * 60_000, 24 * 60 * 60_000)) {
     return NextResponse.json(
       { error: "Too many registration attempts. Please try again later." },
@@ -33,13 +31,10 @@ export async function POST(req: NextRequest) {
     const parsed = schema.parse(body);
     const { username, email, password, turnstile, honeypot, formLoadedAt } = parsed;
 
-    // Honeypot: bots fill hidden fields, humans don't
     if (honeypot && honeypot.trim().length > 0) {
-      // Silently fail — don't reveal honeypot detection
-      return NextResponse.json({ id: "ok" }, { status: 201 });
+      return NextResponse.json({ ok: true });
     }
 
-    // Timing check — form must have been open at least 1.5 seconds
     if (formLoadedAt && Date.now() - formLoadedAt < 1500) {
       return NextResponse.json(
         { error: "Form submitted too quickly. Please try again." },
@@ -47,7 +42,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Cloudflare Turnstile verification
     const turnstileOk = await verifyTurnstile(turnstile, ip);
     if (!turnstileOk) {
       return NextResponse.json(
@@ -56,7 +50,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Disposable email check
     if (isDisposableEmail(email)) {
       return NextResponse.json(
         { error: "Disposable or temporary email addresses are not allowed." },
@@ -64,7 +57,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check for existing user
     const existing = await db.user.findFirst({
       where: { OR: [{ email }, { username }] },
     });
@@ -76,48 +68,23 @@ export async function POST(req: NextRequest) {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
-
-    // Generate email verification token
     const emailVerifyToken = randomBytes(32).toString("hex");
-    const emailVerifyExpiry = new Date(Date.now() + 24 * 60 * 60_000); // 24 hours
+    const emailVerifyExpiry = new Date(Date.now() + 24 * 60 * 60_000);
 
-    // Try creating with email-verification fields; fall back to base fields if the DB
-    // columns don't exist yet (i.e. db:push hasn't been run on the server after the
-    // schema change — this keeps registration working during rolling deploys).
-    let user: { id: string; username: string; email: string; role: string };
-    try {
-      user = await db.user.create({
-        data: { username, email, passwordHash, emailVerifyToken, emailVerifyExpiry, emailVerified: false },
-        select: { id: true, username: true, email: true, role: true },
-      });
-      const sent = await sendVerificationEmail(email, emailVerifyToken);
-      if (!sent) console.warn("[register] verification email failed for", email);
-    } catch {
-      // Columns not yet in DB — create without them (emailVerified defaults to false in schema)
-      user = await db.user.create({
-        data: { username, email, passwordHash },
-        select: { id: true, username: true, email: true, role: true },
-      });
-    }
-
-    const token = await signToken({
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      role: user.role,
+    await db.user.create({
+      data: { username, email, passwordHash, emailVerifyToken, emailVerifyExpiry, emailVerified: false },
+      select: { id: true },
     });
 
-    const response = NextResponse.json(
-      {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        emailVerified: false,
-      },
+    const result = await sendVerificationEmail(email, emailVerifyToken);
+    if (!result.ok) {
+      console.error("[register] email send failed:", result.error);
+    }
+
+    return NextResponse.json(
+      { ok: true, email, emailSent: result.ok, emailError: result.ok ? undefined : result.error },
       { status: 201 }
     );
-    return setTokenCookie(response, token);
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.errors[0].message }, { status: 400 });

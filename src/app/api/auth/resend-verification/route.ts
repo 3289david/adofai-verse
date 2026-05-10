@@ -7,9 +7,9 @@ import { rateLimit, getIp } from "@/lib/rate-limit";
 export async function POST(req: NextRequest) {
   const ip = getIp(req);
 
-  if (!rateLimit(`resend:${ip}`, 2, 5 * 60_000, 15 * 60_000)) {
+  if (!rateLimit(`resend:${ip}`, 3, 5 * 60_000, 15 * 60_000)) {
     return NextResponse.json(
-      { error: "Too many requests. Please wait before trying again." },
+      { error: "Too many requests. Please wait a few minutes before trying again." },
       { status: 429 }
     );
   }
@@ -25,8 +25,11 @@ export async function POST(req: NextRequest) {
       select: { id: true, email: true, emailVerified: true },
     });
 
-    if (!user || user.emailVerified) {
-      return NextResponse.json({ sent: true });
+    if (!user) {
+      return NextResponse.json({ ok: true });
+    }
+    if (user.emailVerified) {
+      return NextResponse.json({ ok: true, alreadyVerified: true });
     }
 
     const emailVerifyToken = randomBytes(32).toString("hex");
@@ -37,10 +40,17 @@ export async function POST(req: NextRequest) {
       data: { emailVerifyToken, emailVerifyExpiry },
     });
 
-    await sendVerificationEmail(user.email, emailVerifyToken);
+    const result = await sendVerificationEmail(user.email, emailVerifyToken);
+    if (!result.ok) {
+      return NextResponse.json(
+        { error: `Failed to send: ${result.error ?? "unknown error"}` },
+        { status: 500 }
+      );
+    }
 
-    return NextResponse.json({ sent: true });
-  } catch {
+    return NextResponse.json({ ok: true, id: result.id });
+  } catch (err) {
+    console.error("[resend-verification]", err);
     return NextResponse.json({ error: "Failed to resend." }, { status: 500 });
   }
 }
