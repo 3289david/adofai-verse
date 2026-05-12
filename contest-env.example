@@ -4,6 +4,7 @@
 # ("Balltel" = likely this Battle/contest app; there is no separate "balltel" service.)
 # =============================================================================
 
-NEXT_PUBLIC_APP_URL="http://localhost:3001"
+# Default Next dev is :3000; use :3001 if another app already uses 3000
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
 NEXT_PUBLIC_AUTH_ISSUER="https://auth.adofai.net"
 OAUTH_CLIENT_ID="adofai_online_contest"
