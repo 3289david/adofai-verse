@@ -9,3 +9,6 @@ build/
 .vercel/
 next-env.d.ts
 tsconfig.tsbuildinfo
+
+# Standalone OAuth IdP — use its own git repo (see adofai-auth/README.md)
+adofai-auth/
