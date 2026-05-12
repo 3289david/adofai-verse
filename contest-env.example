@@ -1,0 +1,9 @@
+# =============================================================================
+# ADOFAI Battle / Online contest — copy to YOUR contest repo as .env.local
+# Repo: https://github.com/3289david/adofai-battle
+# ("Balltel" = likely this Battle/contest app; there is no separate "balltel" service.)
+# =============================================================================
+
+NEXT_PUBLIC_APP_URL="http://localhost:3001"
+NEXT_PUBLIC_AUTH_ISSUER="https://auth.adofai.net"
+OAUTH_CLIENT_ID="adofai_online_contest"
