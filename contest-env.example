@@ -1,10 +1,9 @@
 # =============================================================================
-# ADOFAI Battle / Online contest — copy to YOUR contest repo as .env.local
-# Repo: https://github.com/3289david/adofai-battle
-# ("Balltel" = likely this Battle/contest app; there is no separate "balltel" service.)
+# ADOFAI Battle — combined single-file shortcut (everything in `.env.local` locally).
+# Split for sharing public defaults: `.env.public.example`, secrets: `.env.local.example`
+# Developer docs hub: https://dev.adofai.net → `/dev/environment`
 # =============================================================================
 
-# Default Next dev is :3000; use :3001 if another app already uses 3000
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 NEXT_PUBLIC_AUTH_ISSUER="https://auth.adofai.net"
 OAUTH_CLIENT_ID="adofai_online_contest"
