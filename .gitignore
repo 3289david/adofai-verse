@@ -10,5 +10,6 @@ build/
 next-env.d.ts
 tsconfig.tsbuildinfo
 
-# Standalone OAuth IdP — use its own git repo (see adofai-auth/README.md)
+# Standalone sub-repos — each has its own git repo
 adofai-auth/
+adofai-dev/
