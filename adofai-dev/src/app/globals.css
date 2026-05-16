@@ -1,0 +1,249 @@
+/* adofai-dev — dev.adofai.net */
+:root {
+  --bg: #07070f;
+  --card: rgba(16, 16, 30, 0.92);
+  --border: rgba(26, 26, 53, 0.9);
+  --muted: #8888b0;
+  --text: #f0f0ff;
+  --fire: #ff2244;
+  --ice: #0066ff;
+  --orange: #ff8800;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.55;
+  min-height: 100vh;
+}
+
+a {
+  color: #66aaff;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* ── Nav ─────────────────────────────────────────────── */
+.dev-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1.25rem;
+  justify-content: space-between;
+  padding: 0.85rem clamp(1rem, 4vw, 2rem);
+  border-bottom: 1px solid rgba(0, 102, 255, 0.35);
+  background: linear-gradient(180deg, rgba(0, 30, 60, 0.5) 0%, rgba(7, 7, 15, 0.98) 100%);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.dev-nav-brand {
+  font-weight: 900;
+  font-size: 1.05rem;
+  background: linear-gradient(135deg, var(--ice), #00ddff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.dev-nav-tag {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+  background: rgba(0, 102, 255, 0.2);
+  color: #88ccff;
+  margin-right: auto;
+}
+
+.dev-nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem 1.25rem;
+  font-size: 0.88rem;
+}
+
+.dev-nav-links a {
+  color: #9ab;
+  font-weight: 500;
+}
+
+.dev-nav-links a:hover {
+  color: #eef;
+  text-decoration: none;
+}
+
+/* ── Page wrapper ────────────────────────────────────── */
+.dev-page {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 2rem clamp(1rem, 4vw, 2rem) 3rem;
+}
+
+.dev-page h1 {
+  margin: 0 0 0.65rem;
+  font-size: clamp(1.5rem, 4vw, 2.1rem);
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.dev-page h2 {
+  margin: 2rem 0 0.5rem;
+  font-size: 1.15rem;
+}
+
+.lead {
+  color: var(--muted);
+  font-size: 1rem;
+  margin: 0 0 1.75rem;
+  max-width: 44rem;
+}
+
+/* ── Cards ───────────────────────────────────────────── */
+.dev-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.dev-card {
+  display: block;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.1rem;
+  text-decoration: none;
+  transition: border-color 0.15s;
+}
+
+.dev-card:hover {
+  border-color: rgba(0, 102, 255, 0.5);
+  text-decoration: none;
+}
+
+.dev-card h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.dev-card p {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
+/* ── Badge ───────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(0, 102, 255, 0.15);
+  color: #88ccff;
+  margin-bottom: 0.75rem;
+}
+
+/* ── Prose ───────────────────────────────────────────── */
+.prose {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+.prose strong {
+  color: var(--text);
+}
+.prose code,
+code {
+  font-size: 0.85em;
+  background: rgba(26, 26, 53, 0.8);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  color: #a0aac8;
+}
+.prose ol,
+.prose ul {
+  padding-left: 1.25rem;
+}
+.prose li {
+  margin-bottom: 0.5rem;
+}
+
+/* ── Code block ──────────────────────────────────────── */
+.code-block {
+  font-size: 0.76rem;
+  line-height: 1.45;
+  background: rgba(6, 6, 16, 0.95);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  white-space: pre;
+  margin: 0.75rem 0 1.5rem;
+  color: #aab8d0;
+}
+
+/* ── Table ───────────────────────────────────────────── */
+.endpoint-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  border: 1px solid var(--border);
+  overflow-x: auto;
+}
+.endpoint-table th {
+  padding: 0.5rem 0.65rem;
+  background: rgba(26, 26, 53, 0.6);
+  text-align: left;
+  font-weight: 700;
+}
+.endpoint-table td {
+  padding: 0.5rem 0.65rem;
+  border-top: 1px solid var(--border);
+  vertical-align: top;
+}
+.endpoint-table td:first-child {
+  color: var(--text);
+  white-space: nowrap;
+}
+.endpoint-table td:nth-child(2) code {
+  color: #88aad0;
+  word-break: break-all;
+}
+.endpoint-table td:last-child {
+  color: var(--muted);
+}
+
+/* ── Footer ──────────────────────────────────────────── */
+.foot {
+  margin-top: 3rem;
+  padding: 2rem clamp(1rem, 4vw, 2rem);
+  border-top: 1px solid rgba(0, 102, 255, 0.3);
+  text-align: center;
+  font-size: 0.8rem;
+  color: #6688aa;
+}
+.foot a {
+  color: #66aaff;
+}

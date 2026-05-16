@@ -1,0 +1,16 @@
+node_modules/
+.next/
+.DS_Store
+*.pem
+tsconfig.tsbuildinfo
+next-env.d.ts
+
+# secrets
+.env
+.env.local
+.env*.local
+
+# commit these templates:
+!.env.example
+!.env.public.example
+!.env.local.example
