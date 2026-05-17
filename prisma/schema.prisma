@@ -24,12 +24,44 @@ model User {
   likes              MapLike[]
   comments           Comment[]
   bookmarks          Bookmark[]
+  authCodes          AuthCode[]
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
   @@index([username])
   @@index([email])
   @@index([emailVerifyToken])
+}
+
+model OAuthClient {
+  id               String     @id @default(cuid())
+  clientId         String     @unique
+  clientSecretHash String?
+  name             String
+  redirectUris     String[]
+  isPublic         Boolean    @default(true)
+  createdAt        DateTime   @default(now())
+
+  authCodes AuthCode[]
+}
+
+model AuthCode {
+  id                  String      @id @default(cuid())
+  code                String      @unique
+  clientId            String
+  client              OAuthClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  userId              String
+  user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  redirectUri         String
+  codeChallenge       String
+  codeChallengeMethod String      @default("S256")
+  scope               String      @default("openid profile email")
+  expiresAt           DateTime
+  usedAt              DateTime?
+  createdAt           DateTime    @default(now())
+
+  @@index([code])
+  @@index([expiresAt])
 }
 
 enum UserRole {

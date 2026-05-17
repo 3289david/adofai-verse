@@ -33,6 +33,7 @@ export async function GET(req: NextRequest) {
   const issuer = authIssuer();
   const redirectUri = `${appOrigin()}/api/auth/oauth/callback`;
 
+  // Exchange code for access token
   const tokenRes = await fetch(`${issuer}/api/oauth/token`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -53,20 +54,33 @@ export async function GET(req: NextRequest) {
   const access = tokenJson.access_token;
   if (!access) return fail(req, "no_access_token");
 
+  // Fetch user profile from auth server
   const uiRes = await fetch(`${issuer}/api/oauth/userinfo`, {
     headers: { Authorization: `Bearer ${access}` },
   });
   if (!uiRes.ok) return fail(req, "userinfo_failed");
 
-  const profile = (await uiRes.json()) as { sub?: string };
+  const profile = (await uiRes.json()) as {
+    sub?: string;
+    username?: string;
+    preferred_username?: string;
+    email?: string;
+    role?: string;
+  };
+
+  const sub = profile.sub;
+  if (!sub) return fail(req, "no_user_id");
 
   try {
+    // Shared DB: user was created by auth.adofai.net — look up by ID
     const user = await db.user.findUnique({
-      where: { id: profile.sub ?? "" },
+      where: { id: sub },
       select: { id: true, username: true, email: true, role: true },
     });
 
-    if (!user) return fail(req, "unknown_user_share_db_required");
+    if (!user) {
+      return fail(req, "account_not_found_register_at_auth.adofai.net");
+    }
 
     const jwt = await signToken({
       id: user.id,
