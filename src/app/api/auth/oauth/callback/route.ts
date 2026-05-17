@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { signToken, setTokenCookie } from "@/lib/auth";
-import { appOrigin, authIssuer, oauthClientId } from "@/lib/oauth-app";
+import { appOrigin, oauthClientId } from "@/lib/oauth-app";
 
 const COOKIE_VER = "oa_pkce_ver";
 const COOKIE_ST = "oa_pkce_state";
 const COOKIE_NEXT = "oa_next";
+const COOKIE_ISSUER = "oa_issuer";
 
 function fail(req: NextRequest, msg: string) {
   const u = new URL("/login", req.url);
@@ -23,14 +24,15 @@ export async function GET(req: NextRequest) {
   const jar = req.cookies;
   const verifier = jar.get(COOKIE_VER)?.value;
   const savedState = jar.get(COOKIE_ST)?.value;
+  const issuer = jar.get(COOKIE_ISSUER)?.value;
   let nextPath = jar.get(COOKIE_NEXT)?.value ?? "/";
 
   if (!code || !state || !verifier || !savedState || state !== savedState) {
     return fail(req, "invalid_oauth_session");
   }
+  if (!issuer) return fail(req, "missing_issuer_cookie");
   if (!nextPath.startsWith("/")) nextPath = "/";
 
-  const issuer = authIssuer();
   const redirectUri = `${appOrigin()}/api/auth/oauth/callback`;
 
   // Exchange code for access token
@@ -93,6 +95,7 @@ export async function GET(req: NextRequest) {
     res.cookies.set(COOKIE_VER, "", { path: "/", maxAge: 0 });
     res.cookies.set(COOKIE_ST, "", { path: "/", maxAge: 0 });
     res.cookies.set(COOKIE_NEXT, "", { path: "/", maxAge: 0 });
+    res.cookies.set(COOKIE_ISSUER, "", { path: "/", maxAge: 0 });
     return setTokenCookie(res, jwt);
   } catch {
     return fail(req, "login_failed");
